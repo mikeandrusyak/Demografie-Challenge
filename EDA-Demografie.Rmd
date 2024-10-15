@@ -1,0 +1,49 @@
+```{r}
+library(readr)
+
+# Використання read_delim() з роздільником ";"
+data <- read_delim("data/SNC_240387.csv", delim = ";", n_max = 1000000)
+
+# Показати перші кілька рядків
+head(data)
+```
+```{r}
+library(dplyr)
+data <- data %>%
+  mutate(dstart = as.Date(dstart, format = "%d/%m/%Y"),
+         dstop = as.Date(dstop, format = "%d/%m/%Y"))
+```
+
+```{r}
+filtered_data <- data %>%
+  filter(is.na(yod))
+
+head(filtered_data)
+```
+```{r}
+filtered_data %>% slice_min(yob, n = 6)
+```
+```{r}
+filtered_data %>% select(yob) %>% arrange(yob) %>% slice_head(n=5)
+```
+```{r}
+df <- data.frame(value = c("apple", "banana", "cherry",  "banana"))
+df <- mutate(df, new_value = case_match(value,
+                                        "apple" ~ "fruit",
+                                        "banana" ~ "error",
+                                        "cherry" ~ "fruit"))
+df
+```
+
+```{r}
+
+```
+```{r}
+mutate(palmerpenguins::penguins, across(bill_length_mm:body_mass_g, ~ round(.x / 1000, 4)))
+```
+
+
+
+
+
+

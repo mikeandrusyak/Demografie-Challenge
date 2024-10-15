@@ -1,3 +1,8 @@
 test.csv
 **/*.csv
-data/*.csv
+data
+.Rproj.user
+*.docx
+renv
+
+.DS_Store
