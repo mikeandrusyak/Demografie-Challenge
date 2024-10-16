@@ -1,8 +1,7 @@
-test.csv
-**/*.csv
 data
 .Rproj.user
 *.docx
 renv
-
 .DS_Store
+.Rhistory
+.RData
