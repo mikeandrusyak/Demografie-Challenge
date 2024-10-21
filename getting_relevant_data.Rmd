@@ -235,4 +235,7 @@ library(stringr)
 filtered_ZP_by_year <- result_df_detailed %>% filter(Sheet == "ZP", str_detect(File, "2010"))
 filtered_ZP_by_year
 ```
+```{r}
+c(filtered_ZP_by_year$Variable)
+```
 
