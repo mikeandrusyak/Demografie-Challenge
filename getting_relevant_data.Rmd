@@ -166,5 +166,73 @@ library(visdat)
 ```{r}
 vis_value(result_df)
 ```
+```{r}
+# Create a list to store the results with detailed information
+result_list <- list()
 
+# Checking each sheet in each file
+for (file_idx in seq_along(file_names)) {
+  file <- file_names[file_idx]
+  for (var_idx in seq_along(variables_list)) {
+    var <- variables_list[var_idx]
+    
+    # Flag to check if the variable is found
+    found <- FALSE  
+    
+    for (sheet in sheet_names[[file]]) {
+      # Get the data from the sheet
+      sheet_data <- all_data[[file]][[sheet]]
+      
+      # Check if the sheet data is a list or vector
+      if (is.list(sheet_data) || is.vector(sheet_data)) {
+        # Check if the variable is present in this list or vector
+        if (var %in% unlist(sheet_data)) {
+          # Add the information to result_list
+          result_list[[length(result_list) + 1]] <- data.frame(
+            Variable = var,
+            File = file,
+            Sheet = sheet,
+            Found = 1
+          )
+          
+          found <- TRUE
+          break  # Exit the loop if found
+        }
+      }
+    }
+    
+    # If variable was not found, still add the result but with 'Found = 0'
+    if (!found) {
+      result_list[[length(result_list) + 1]] <- data.frame(
+        Variable = var,
+        File = file,
+        Sheet = NA,
+        Found = 0
+      )
+    }
+  }
+}
+
+# Combine the list into a data frame
+result_df_detailed <- do.call(rbind, result_list)
+
+# Output the result
+print(result_df_detailed)
+
+```
+```{r}
+library(dplyr)
+
+# Filter rows where Sheet is "ZP"
+filtered_ZP <- result_df_detailed %>% filter(Sheet == "ZP")
+
+# Output the result
+filtered_ZP
+```
+
+```{r}
+library(stringr)
+filtered_ZP_by_year <- result_df_detailed %>% filter(Sheet == "ZP", str_detect(File, "2010"))
+filtered_ZP_by_year
+```
 
