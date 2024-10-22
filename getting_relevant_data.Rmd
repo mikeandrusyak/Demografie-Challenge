@@ -176,8 +176,8 @@ for (file_idx in seq_along(file_names)) {
   for (var_idx in seq_along(variables_list)) {
     var <- variables_list[var_idx]
     
-    # Flag to check if the variable is found
-    found <- FALSE  
+    # Flag to check if the variable is found on any sheet
+    found_anywhere <- FALSE  
     
     for (sheet in sheet_names[[file]]) {
       # Get the data from the sheet
@@ -187,7 +187,7 @@ for (file_idx in seq_along(file_names)) {
       if (is.list(sheet_data) || is.vector(sheet_data)) {
         # Check if the variable is present in this list or vector
         if (var %in% unlist(sheet_data)) {
-          # Add the information to result_list
+          # Add the information to result_list for each sheet where the variable is found
           result_list[[length(result_list) + 1]] <- data.frame(
             Variable = var,
             File = file,
@@ -195,14 +195,14 @@ for (file_idx in seq_along(file_names)) {
             Found = 1
           )
           
-          found <- TRUE
-          break  # Exit the loop if found
+          found_anywhere <- TRUE
+          # Continue checking other sheets, don't break the loop
         }
       }
     }
     
-    # If variable was not found, still add the result but with 'Found = 0'
-    if (!found) {
+    # If the variable was not found in any sheet of the file, still add the result
+    if (!found_anywhere) {
       result_list[[length(result_list) + 1]] <- data.frame(
         Variable = var,
         File = file,
@@ -229,71 +229,32 @@ filtered_ZP <- result_df_detailed %>% filter(Sheet == "ZP")
 # Output the result
 filtered_ZP
 ```
+```{r}
+c(filtered_ZP$Variable) %>% unique()
+```
+
+
+```{r}
+# Filter rows where Sheet is "HH"
+filtered_HH <- result_df_detailed %>% filter(Sheet == "HH")
+
+# Output the result
+filtered_HH
+```
+```{r}
+library(stringr)
+filtered_ZP_by_year <- result_df_detailed %>% filter(Sheet == "ZP", str_detect(File, "2020"))
+filtered_ZP_by_year
+```
 
 ```{r}
 library(stringr)
-filtered_ZP_by_year <- result_df_detailed %>% filter(Sheet == "ZP", str_detect(File, "2010"))
-filtered_ZP_by_year
+filtered_by_year <- result_df_detailed %>%
+  filter(str_detect(File, "2015")) %>%
+  arrange(Variable)  
+filtered_by_year
 ```
 ```{r}
 c(filtered_ZP_by_year$Variable)
 ```
-
-```{r}
-fill_children_vars <- function(df) {
-  # Count children under 18 and under 25 in the household
-  df$HH_FAMU18_CHILDREN <- apply(df, 1, function(row) sum(row$age < 18))
-  df$HH_FAMU25_CHILDREN <- apply(df, 1, function(row) sum(row$age < 25))
-  return(df)
-}
-```
-
-```{r}
-create_or_fill_hh_size <- function(df) {
-  # Create empty columns for 2020 and 2021
-  df$HH_SIZE_16_2020 <- NA
-  df$HH_SIZE_110_2020 <- NA
-  df$HH_SIZE_111_2020 <- NA
-  
-  df$HH_SIZE_16_2021 <- NA
-  df$HH_SIZE_110_2021 <- NA
-  df$HH_SIZE_111_2021 <- NA
-  
-  # Fill by counting the number of household members for each year
-  df$HH_SIZE_16_2020 <- apply(df[df$year == 2020, ], 1, function(row) sum(!is.na(row$person_id)))
-  df$HH_SIZE_110_2020 <- apply(df[df$year == 2020, ], 1, function(row) sum(!is.na(row$person_id)))
-  df$HH_SIZE_111_2020 <- apply(df[df$year == 2020, ], 1, function(row) sum(!is.na(row$person_id)))
-  
-  df$HH_SIZE_16_2021 <- apply(df[df$year == 2021, ], 1, function(row) sum(!is.na(row$person_id)))
-  df$HH_SIZE_110_2021 <- apply(df[df$year == 2021, ], 1, function(row) sum(!is.na(row$person_id)))
-  df$HH_SIZE_111_2021 <- apply(df[df$year == 2021, ], 1, function(row) sum(!is.na(row$person_id)))
-  
-  return(df)
-}
-```
-
-```{r}
-create_empty_educ_var <- function(df) {
-  df$HH_HIGHESTCOMPLEDUAGGIII <- ifelse(df$year <= 2012, NA, df$HH_HIGHESTCOMPLEDUAGGIII)
-  return(df)
-}
-```
-
-```{r}
-rename_socio_group <- function(df) {
-  if("SOCIOECONOMICGROUP" %in% colnames(df)) {
-    df <- df %>%
-      mutate(SOCIOPROFGROUP = ifelse(year == 2020 | year == 2021, SOCIOECONOMICGROUP, SOCIOPROFGROUP)) %>%
-      select(-SOCIOECONOMICGROUP)
-  }
-  return(df)
-}
-```
-
-
-
-
-
-
-
 
