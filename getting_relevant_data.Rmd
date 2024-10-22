@@ -252,6 +252,7 @@ filtered_by_year
 ```{r}
 c(filtered_ZP_by_year$Variable)
 ```
+
 ```{r}
 fill_children_vars <- function(df) {
   # Count children under 18 and under 25 in the household
