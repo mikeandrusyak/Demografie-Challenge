@@ -252,4 +252,61 @@ filtered_by_year
 ```{r}
 c(filtered_ZP_by_year$Variable)
 ```
+```{r}
+fill_children_vars <- function(df) {
+  # Count children under 18 and under 25 in the household
+  df$HH_FAMU18_CHILDREN <- apply(df, 1, function(row) sum(row$age < 18))
+  df$HH_FAMU25_CHILDREN <- apply(df, 1, function(row) sum(row$age < 25))
+  return(df)
+}
+```
+
+```{r}
+create_or_fill_hh_size <- function(df) {
+  # Create empty columns for 2020 and 2021
+  df$HH_SIZE_16_2020 <- NA
+  df$HH_SIZE_110_2020 <- NA
+  df$HH_SIZE_111_2020 <- NA
+  
+  df$HH_SIZE_16_2021 <- NA
+  df$HH_SIZE_110_2021 <- NA
+  df$HH_SIZE_111_2021 <- NA
+  
+  # Fill by counting the number of household members for each year
+  df$HH_SIZE_16_2020 <- apply(df[df$year == 2020, ], 1, function(row) sum(!is.na(row$person_id)))
+  df$HH_SIZE_110_2020 <- apply(df[df$year == 2020, ], 1, function(row) sum(!is.na(row$person_id)))
+  df$HH_SIZE_111_2020 <- apply(df[df$year == 2020, ], 1, function(row) sum(!is.na(row$person_id)))
+  
+  df$HH_SIZE_16_2021 <- apply(df[df$year == 2021, ], 1, function(row) sum(!is.na(row$person_id)))
+  df$HH_SIZE_110_2021 <- apply(df[df$year == 2021, ], 1, function(row) sum(!is.na(row$person_id)))
+  df$HH_SIZE_111_2021 <- apply(df[df$year == 2021, ], 1, function(row) sum(!is.na(row$person_id)))
+  
+  return(df)
+}
+```
+
+```{r}
+create_empty_educ_var <- function(df) {
+  df$HH_HIGHESTCOMPLEDUAGGIII <- ifelse(df$year <= 2012, NA, df$HH_HIGHESTCOMPLEDUAGGIII)
+  return(df)
+}
+```
+
+```{r}
+rename_socio_group <- function(df) {
+  if("SOCIOECONOMICGROUP" %in% colnames(df)) {
+    df <- df %>%
+      mutate(SOCIOPROFGROUP = ifelse(year == 2020 | year == 2021, SOCIOECONOMICGROUP, SOCIOPROFGROUP)) %>%
+      select(-SOCIOECONOMICGROUP)
+  }
+  return(df)
+}
+```
+
+
+
+
+
+
+
 
