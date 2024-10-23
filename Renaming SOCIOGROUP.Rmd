@@ -1,0 +1,10 @@
+```{r}
+library(dplyr)
+zp_2020 <- read.csv("data/strukturerhebung/2020_SE_RS_CSV/zp_2020.csv", sep = ';')
+head(zp_2020)
+
+```
+```{r}
+select()
+```
+
