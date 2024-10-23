@@ -1,0 +1,9 @@
+```{r}
+library(dplyr)
+hh_2014 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hh_2014.csv', sep =';')
+head(hh_2014)
+```
+```{r}
+hh_2014 %>% select(HH_COUNTOFPERSON,HH_SIZE_16,HH_SIZE_110,HH_SIZE_111) %>% filter(HH_COUNTOFPERSON > 10)
+```
+
