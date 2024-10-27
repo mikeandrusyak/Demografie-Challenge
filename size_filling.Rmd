@@ -6,4 +6,16 @@ head(hh_2014)
 ```{r}
 hh_2014 %>% select(HH_COUNTOFPERSON,HH_SIZE_16,HH_SIZE_110,HH_SIZE_111) %>% filter(HH_COUNTOFPERSON > 10)
 ```
+```{r}
+hh_fam25 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hhm_2014_ch.csv', sep =';')
+
+head(hh_fam25)
+library(tidyverse)
+view(hh_fam25)
+```
+
+
+```{r}
+hh_fam25 %>% select(HH_FAMU18_CHILDREN, HH_FAMU25_CHILDREN)
+```
 
