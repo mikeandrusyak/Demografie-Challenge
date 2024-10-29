@@ -1,5 +1,6 @@
 ```{r}
 library(dplyr)
+library(tidyverse)
 hh_2014 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hh_2014.csv', sep =';')
 head(hh_2014)
 ```
@@ -7,15 +8,55 @@ head(hh_2014)
 hh_2014 %>% select(HH_COUNTOFPERSON,HH_SIZE_16,HH_SIZE_110,HH_SIZE_111) %>% filter(HH_COUNTOFPERSON > 10)
 ```
 ```{r}
-hh_fam25 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hhm_2014_ch.csv', sep =';')
+hh_fam25 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hh_2014.csv', sep =';')
 
 head(hh_fam25)
-library(tidyverse)
-view(hh_fam25)
 ```
 
 
 ```{r}
 hh_fam25 %>% select(HH_FAMU18_CHILDREN, HH_FAMU25_CHILDREN)
+```
+
+
+```{r}
+filtered_data <- hh_fam25 %>% 
+  filter(HH_FAMU18_CHILDREN > 0 ,HH_FAMU25_CHILDREN > 0)
+
+
+head(filtered_data)
+
+filtered_data %>% select(HH_FAMU18_CHILDREN, HH_FAMU25_CHILDREN)
+```
+
+
+```{r}
+hh_fam25 <- hh_fam25 %>%
+  mutate(
+    HH_FAMU18_CHILDREN = rowSums(select(., starts_with("AGE")) < 18, na.rm = TRUE),
+    HH_FAMU25_CHILDREN = rowSums(select(., starts_with("AGE")) < 25, na.rm = TRUE)
+  )
+
+head(hh_fam25 %>% select(HH_FAMU18_CHILDREN, HH_FAMU25_CHILDREN))
+```
+
+
+```{r}
+summary(hh_fam25$HH_FAMU18_CHILDREN)
+```
+
+
+```{r}
+x<-c(4,5,7,3,3,5,7,8,-9,44,-567,1,2,3,4)
+y<-c(4,5,7,3,45,6,7,-9,5,4,-57,8,89,6,5)
+data <- cor(data.frame(x,y), method = "person")
+```
+
+
+```{r}
+
+library(corrplot)
+
+corrplot(data, method = 'pie', cl.pos = 'n')
 ```
 
