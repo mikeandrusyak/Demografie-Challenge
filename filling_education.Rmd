@@ -1,0 +1,19 @@
+```{r}
+library(dplyr)
+hh_2014 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hh_2014.csv', sep =';')
+head(hh_2014)
+```
+```{r}
+zp_2014 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/zp_2014.csv', sep =';')
+head(zp_2014)
+```
+
+```{r}
+hh_2010 <- read.csv('data/strukturerhebung//2010_SE_RS_CSV/hh_2010.csv', sep =';')
+head(hh_2010)
+```
+```{r}
+zp_2010 <- read.csv('data/strukturerhebung//2010_SE_RS_CSV/zp_2010.csv', sep =';')
+head(zp_2010)
+```
+
