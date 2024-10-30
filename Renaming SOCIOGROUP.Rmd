@@ -1,10 +1,49 @@
 ```{r}
 library(dplyr)
-zp_2020 <- read.csv("data/strukturerhebung/2020_SE_RS_CSV/zp_2020.csv", sep = ';')
-head(zp_2020)
 
+zp_2020 <- read.csv("data/strukturerhebung/2020_SE_RS_CSV/zp_2020.csv", sep = ';')
+
+head(zp_2020)
 ```
+
 ```{r}
-select()
+selected_df_2020 <- zp_2020 %>% select("SOCIOPROFGROUP")
+
+head(selected_df_2020)
 ```
+
+```{r}
+zp_2020 <- zp_2020 %>% rename(SOCIOECONOMICGROUP = SOCIOPROFGROUP)
+
+head(zp_2020)
+```
+
+```{r}
+zp_2020 %>% select(SOCIOECONOMICGROUP) %>% head()
+```
+
+```{r}
+zp_2021 <- read.csv("data/strukturerhebung/2021_SE_RS_CSV/zp_2021.csv", sep = ';')
+
+head(zp_2021)
+```
+
+```{r}
+selected_df_2021 <- zp_2021 %>% select("SOCIOPROFGROUP")
+
+head(selected_df_2021)
+```
+
+```{r}
+zp_2021 <- zp_2021 %>% rename(SOCIOECONOMICGROUP = SOCIOPROFGROUP)
+
+head(zp_2021)
+```
+
+```{r}
+zp_2021 %>% select(SOCIOECONOMICGROUP) %>% head()
+```
+
+
+
 
