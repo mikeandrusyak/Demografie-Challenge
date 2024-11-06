@@ -1,0 +1,33 @@
+```{r}
+library(dplyr)
+hh_2014 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hh_2014.csv', sep =';')
+hhm_2014 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hhm_2014_ch.csv', sep =';')
+
+```
+
+```{r}
+head(hh_2014)
+head(hhm_2014)
+```
+```{r}
+# Create an empty list to store all loaded data frames
+data_list <- list()
+
+# Loop through the years 2014 to 2016
+for (year in 2014:2016) {
+  # Construct the file path for each year
+  file_path <- paste0("data/strukturerhebung/", year, "_SE_RS_CSV/hh_", year, ".csv")
+  
+  # Read the CSV file and add it to the list
+  data_list[[year]] <- read.csv(file_path, sep = ";")
+}
+
+# After this, all files will be in data_list, accessible by year
+# For example, to access data for the year 2014: data_list[["2014"]]
+```
+
+```{r}
+for (year in 2014:2016) {
+  print(head(data_list[[year]]))
+}
+```
