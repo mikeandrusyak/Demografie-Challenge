@@ -1,0 +1,34 @@
+
+
+```{r}
+hh_fam25 <- read.csv('data/strukturerhebung//2014_SE_RS_CSV/hh_2014.csv', sep =';')
+
+head(hh_fam25)
+library(tidyverse)
+```
+
+
+```{r}
+hh_fam25 %>% select(HH_FAMU25_CHILDREN)
+```
+
+
+```{r}
+str(hh_fam25$HH_FAMU25_CHILDREN)
+```
+
+
+```{r}
+hh_fam25 <- hh_fam25 %>%
+  mutate(
+    HH_FAMU18_CHILDREN = rowSums(select(., starts_with("age")) < 18, na.rm = TRUE),
+    HH_FAMU25_CHILDREN = rowSums(select(., starts_with("age")) < 25, na.rm = TRUE)
+  )
+```
+
+
+
+```{r}
+head(hh_fam25$HH_FAMU25_CHILDREN)
+```
+
