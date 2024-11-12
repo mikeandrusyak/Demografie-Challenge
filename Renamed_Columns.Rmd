@@ -1,0 +1,57 @@
+---
+title: "Renamed_Columns"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+
+# Recreate data_list to ensure files load correctly
+data_list <- list()
+for (year in 2014:2015) {
+    file_path <- paste0("data/strukturerhebung/", year, "_SE_RS_CSV/zp_", year, ".csv")
+    data_list[[as.character(year)]] <- read.csv(file_path, sep = ";")
+}
+
+# Function to rename columns across multiple data frames in a list
+rename_columns <- function(data_list, rename_mappings) {
+  # Loop through each data frame in the list
+  for (year in names(data_list)) {
+    # Ensure the year data frame isn't NULL
+    if (!is.null(data_list[[year]])) {
+      # Loop through each old column name in the renaming mappings
+      for (old_name in names(rename_mappings)) {
+        new_name <- rename_mappings[[old_name]]
+        
+        # Check if the old name exists in the data frame for that year
+        if (old_name %in% names(data_list[[year]])) {
+          # Rename the column using rename_with for safety with dynamic names
+          data_list[[year]] <- data_list[[year]] %>%
+            rename_with(~ new_name, .cols = old_name)
+          
+          # Print a message to confirm renaming (optional)
+          message(paste("Renamed", old_name, "to", new_name, "in year", year))
+        }
+      }
+    }
+  }
+  return(data_list)
+}
+
+# Define the list of old and new names for renaming
+rename_mappings <- c(
+  "SECCITIZ" = "SECCITIZENSHIP",
+  "WORKSTATUSDETAIL" = "WORKSTATUS_DETAIL"
+)
+
+# Apply the renaming function to the data list
+data_list <- rename_columns(data_list, rename_mappings)
+
+# Check the results for specific columns
+data_list[["2014"]] %>% select(SECCITIZENSHIP, WORKSTATUS_DETAIL)
+data_list[["2015"]] %>% select(SECCITIZENSHIP, WORKSTATUS_DETAIL)
+```
+
+```{r}
+data_list[["2014"]] %>% select(SECCITIZENSHIP, SECCITIZ)
+```
