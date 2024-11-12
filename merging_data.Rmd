@@ -1,0 +1,231 @@
+```{r}
+library(dplyr)
+```
+
+```{r}
+variables_list <- c(
+  "AGE", "BIRTH_CANTON", "BIRTH_CTRY", "BIRTH_MUN", "BIRTH_MUNCAT", "CANCELATIONREASON", 
+  "CHARRIVALYEAR", "CHCOMESFROMCTRY", "CITIZBIRTHANDTODAY", "COMPANYENPSIZE", 
+  "COMPANY_CANTON", "COMPANY_CTRY", "COMPANY_DISTRICT", "COMPANY_MUN", 
+  "COMPLETEDEDU10", "COMPLETEDEDU11", "COMPLETEDEDU12", "COMPLETEDEDU13", 
+  "COMPLETEDEDU3", "COMPLETEDEDU4", "COMPLETEDEDU5", "COMPLETEDEDU6", 
+  "COMPLETEDEDU7", "COMPLETEDEDU8", "COMPLETEDEDU9", "CTRYOFBIRTHOFFATHER", 
+  "CTRYOFBIRTHOFMOTHER", "CTRYOFBIRTHOFPARENTS", "CURRACTIVITYSTATUSI", 
+  "CURRACTIVITYSTATUSII", "CURRACTIVITYSTATUSIII", "CURRACTIVITY_DISOCC", 
+  "CURRACTIVITY_FULL", "CURRACTIVITY_HOME", "CURRACTIVITY_MULTI", 
+  "CURRACTIVITY_OTHER", "CURRACTIVITY_PART", "CURRACTIVITY_STUDENT", 
+  "DEPFORSCHOOL", "DEPFORSCHOOLCANTON", "DEPFORSCHOOLCTRY", "FAMILYREUNION", 
+  "GASTWS", "GAZWOT", "GBAUPS", "GKATS", "hh_age", "HH_BIRTH_CTRY", 
+  "HH_CANCELATIONREASON", "HH_CHCOMESFROMCTRY", "HH_CHCOMESFROMCTRYAGG", 
+  "HH_CLASSAGEFIVEYEARS", "HH_CLASSOFMARITALSTATUS", "HH_COMESFROMSTATE", 
+  "HH_COUNTOFFEMALEMINOR", "HH_COUNTOFFEMALEU25", "HH_COUNTOFMALEMINOR", 
+  "HH_COUNTOFMALEU25", "HH_COUNTOFPERSON", "HH_CURRACTIVITYSTATUSI", 
+  "HH_CURRACTIVITYSTATUSII", "HH_CURRACTIVITYSTATUSIII", "HH_CURRACTSTI_GROUPS", 
+  "HH_FAMILYREUNION", "HH_FAMU18", "HH_FAMU18_CHILDREN", "HH_FAMU18_PARENTS", 
+  "HH_FAMU25", "HH_FAMU25_CHILDREN", "HH_FAMU25_PARENTS", "HH_HEDUAGGI_COUPLES", 
+  "HH_HEDUAGGI_OLD_25", "HH_HEDUAGGI_OLD_30", "HH_HIGHESTCOMPLEDUAggI", 
+  "HH_HIGHESTCOMPLEDUAGGII", "HH_HIGHESTCOMPLEDUAGGIII", "HH_MAINLANGUAGEAGG1", 
+  "HH_MAINLANGUAGEAGG14", "HH_MAINLANGUAGEAGG2", "HH_MAINLANGUAGEAGG3", 
+  "HH_MAINLANGUAGEAGG4", "HH_MAINLANGUAGEAGG5", "HH_MAINLANGUAGEAGG6", 
+  "HH_MAINLANGUAGEAGG7", "HH_MAINLANGUAGEAGG8", "HH_MAINLANGUAGEAGG9", 
+  "HH_MAINRESCATEGORY", "hh_maritalstatus", "HH_MUNSTAYDURATION", 
+  "HH_MUNSTAYYEARS", "HH_NATAGG_GROUPS", "HH_NATCAT_GROUPS", "HH_NATIONALITYAGG", 
+  "HH_NATIONALITYCAT", "HH_NATIONALITYCONTI", "HH_NATIONALITYSTATE", 
+  "HH_OCC_MODEL", "HH_POPULATIONGROUP", "HH_POSITION_IN_HH_BFS", 
+  "HH_REPORTINGHISTMUN", "HH_RESIDENTPERMIT", "HH_RES_CANTON", 
+  "HH_RES_CANTON1YEARAGO", "HH_RES_CANTON2YEARAGO", "HH_RES_CANTON3YEARAGO", 
+  "HH_RES_CANTON4YEARAGO", "HH_RES_CANTON5YEARAGO", "HH_RES_CTRY1YEARAGO", 
+  "HH_RES_CTRY2YEARAGO", "HH_RES_CTRY3YEARAGO", "HH_RES_CTRY4YEARAGO", 
+  "HH_RES_CTRY5YEARAGO", "HH_RES_HISTMUN1YEARAGO", "HH_RES_HISTMUN2YEARAGO", 
+  "HH_RES_HISTMUN3YEARAGO", "HH_RES_HISTMUN4YEARAGO", "HH_RES_HISTMUN5YEARAGO", 
+  "HH_RES_MUN", "HH_RES_MUN1YEARAGO", "HH_RES_MUN2YEARAGO", "HH_RES_MUN3YEARAGO", 
+  "HH_RES_MUN4YEARAGO", "HH_RES_MUN5YEARAGO", "HH_SEPARATION", "HH_SIZE_16", 
+  "HIGHESTCOMPLEDU", "HIGHESTCOMPLEDUAGGI", "HIGHESTCOMPLEDUAGGII", 
+  "HIGHESTCOMPLEDUAGGIII", "IN_EDUCATION", "LANGUAGEHOME1", "LANGUAGEHOME10", 
+  "LANGUAGEHOME11", "LANGUAGEHOME12", "LANGUAGEHOME2", "LANGUAGEHOME3", 
+  "LANGUAGEHOME4", "LANGUAGEHOME5", "LANGUAGEHOME6", "LANGUAGEHOME7", 
+  "LANGUAGEHOME8", "LANGUAGEHOME9", "MAINLANGUAGEAGG1", "MAINLANGUAGEAGG10", 
+  "MAINLANGUAGEAGG11", "MAINLANGUAGEAGG12", "MAINLANGUAGEAGG13", 
+  "MAINLANGUAGEAGG14", "MAINLANGUAGEAGG2", "MAINLANGUAGEAGG3", 
+  "MAINLANGUAGEAGG4", "MAINLANGUAGEAGG5", "MAINLANGUAGEAGG6", 
+  "MAINLANGUAGEAGG7", "MAINLANGUAGEAGG8", "MAINLANGUAGEAGG9", 
+  "MAINLANGUAGEI", "MAINLANGUAGEIAGG", "MARITALSTATUS", "MIGRATIONSTATUS", 
+  "MIGRATIONSTATUSAGG", "NATIONALITYCONTI", "NUMBEROFROOMS", "POPULATIONGROUP", 
+  "RENTNET", "RESIDENTPERMIT", "RES_1YEARAGO", "RES_2YEARAGO", "RES_3YEARAGO", 
+  "RES_4YEARAGO", "RES_5YEARAGO", "RES_CANTON", "RES_MUN", "SCHOOLENPNOGA", 
+  "SCHOOLENPSIZE", "SCHOOLLOCUNSECTOR", "SCHOOL_ADDRESSCTRY", "SCHOOL_CANTON", 
+  "SCHOOL_DISTRICT", "SECCITIZ", "SECCITIZENSHIP", "SOCIOECONOMICGROUP", 
+  "SOCIOPROFGROUP", "TYPEOFCITIZACQ_DI", "TYPEOFOWNERSHIP", "WAREAS", 
+  "WORKSTATUSDETAIL", "WORKSTATUS_DETAIL", "YEAROFARRIVAL", "YEAROFCITIZACQ_SWISS"
+)
+
+# Перша змінна з вашим списком
+hhm_variables <- c(
+  "HH_POSITION_IN_HH_BFS", "hh_age", "HH_CLASSAGEFIVEYEARS",
+  "HH_BIRTH_CTRY", "HH_BIRTH_URBRUR", "HH_BIRTH_URBRURdi",
+  "HH_FAMILYREUNION", "HH_CANCELATIONREASON", "HH_CLASSOFMARITALSTATUS",
+  "hh_maritalstatus", "HH_SEPARATION", "HH_CHCOMESFROMCTRY",
+  "HH_CHCOMESFROMCTRYAGG", "HH_COMESFROMSTATE", "HH_COMESFROMTAXREL",
+  "HH_COMESFROMURBRUR", "HH_COMESFROMURBRURdi", "HH_MUNSTAYDURATION",
+  "HH_MUNSTAYYEARS", "HH_NATIONALITYAGG", "HH_NATIONALITYCAT",
+  "HH_NATIONALITYCONTI", "hh_nationalityid", "HH_POPULATIONGROUP",
+  "HH_REPORTINGHISTMUN", "HH_RES_AGGLO", "HH_RES_CANTON",
+  "HH_RES_GREATREG", "HH_RES_LABMARKREG", "HH_RES_LANGREG",
+  "HH_RES_MSREG", "HH_RES_MUN", "HH_RES_MUNSIZE", "HH_MAINRESCATEGORY",
+  "HH_RES_1YEARAGO", "HH_RES_2YEARAGO", "HH_RES_3YEARAGO",
+  "HH_RES_4YEARAGO", "HH_RES_5YEARAGO", "HH_RES_AGGLO5YEARAGO",
+  "HH_RES_CANTON5YEARAGO", "HH_RES_CTRY1YEARAGO", "HH_RES_CTRY2YEARAGO",
+  "HH_RES_CTRY3YEARAGO", "HH_RES_CTRY4YEARAGO", "HH_RES_CTRY5YEARAGO",
+  "HH_RES_GR1YEARAGO", "HH_RES_GR2YEARAGO", "HH_RES_GR3YEARAGO",
+  "HH_RES_GR4YEARAGO", "HH_RES_GR5YEARAGO", "HH_RES_HISTMUN1YEARAGO",
+  "HH_RES_HISTMUN2YEARAGO", "HH_RES_HISTMUN3YEARAGO", "HH_RES_HISTMUN4YEARAGO",
+  "HH_RES_HISTMUN5YEARAGO", "HH_RES_URBRUR1YEARAGO", "HH_RES_URBRUR2YEARAGO",
+  "HH_RES_URBRUR3YEARAGO", "HH_RES_URBRUR4YEARAGO", "HH_RES_URBRUR5YEARAGO",
+  "HH_RES_URBRURDI1YAGO", "HH_RES_URBRURDI2YAGO", "HH_RES_URBRURDI3YAGO",
+  "HH_RES_URBRURDI4YAGO", "HH_RES_URBRURDI5YAGO", "HH_RESIDENTPERMIT",
+  "HH_HIGHESTCOMPLEDUAggI", "HH_HIGHESTCOMPLEDUAGGII", "HH_HIGHESTCOMPLEDUAGGIII",
+  "hh_mainlanguageAgg1", "hh_mainlanguageAgg2", "hh_mainlanguageAgg3",
+  "hh_mainlanguageAgg4", "hh_mainlanguageAgg5", "hh_mainlanguageAgg6",
+  "hh_mainlanguageAgg7", "hh_mainlanguageAgg8", "hh_mainlanguageAgg9",
+  "hh_mainlanguageAgg14", "hh_mainlanguageIAgg",
+  "HH_CURRACTIVITYSTATUSI", "HH_CURRACTIVITYSTATUSII", "HH_CURRACTIVITYSTATUSIII",
+  "HH_NATIONALITYSTATE", "HH_RES_CANTON1YEARAGO",
+ "HH_RES_CANTON2YEARAGO", "HH_RES_CANTON3YEARAGO",
+ "HH_RES_CANTON4YEARAGO", "HH_RES_MUN1YEARAGO",
+ "HH_RES_MUN2YEARAGO", "HH_RES_MUN3YEARAGO",
+ "HH_RES_MUN4YEARAGO", "HH_RES_MUN5YEARAGO" 
+)
+
+# Друга змінна, що містить попередньо заданий список змінних
+hh_variables <-setdiff(variables_list, hhm_variables)
+```
+
+```{r}
+# Функція для завантаження даних
+load_data <- function(year, file_type, variables) {
+  file_path <- paste0("data/strukturerhebung/", year, "_SE_RS_CSV/", file_type, year, ".csv")
+  
+  if (file.exists(file_path)) {
+    data <- read.csv(file_path, sep = ";")
+    data$YEAR_QUIZ <- year
+    data <- data %>% select(any_of(c(variables, "YEAR_QUIZ")))
+    return(data)
+  } else {
+    message(paste("Файл не знайдено:", file_path))
+    return(NULL)
+  }
+}
+```
+
+```{r}
+
+# Завантаження даних для всіх років за два типи файлів
+load_all_data <- function(start_year, end_year, file_type, variables) {
+  data_list <- list()
+  
+  for (year in start_year:end_year) {
+    data <- load_data(year, file_type, variables)
+    if (!is.null(data)) {
+      data_list[[year]] <- data
+    }
+  }
+  
+  return(data_list)
+}
+```
+
+```{r}
+# Function to rename columns across multiple data frames in a list
+rename_columns <- function(data_list, rename_mappings) {
+  # Loop through each data frame in the list
+  for (year in names(data_list)) {
+    # Loop through each old column name in the renaming mappings
+    for (old_name in names(rename_mappings)) {
+      new_name <- rename_mappings[[old_name]]
+      
+      # Check if the old name exists in the data frame for that year
+      if (old_name %in% names(data_list[[year]])) {
+        # Rename the column
+        data_list[[year]] <- data_list[[year]] %>%
+          rename(!!new_name := !!sym(old_name))
+        
+        # Print a message to confirm renaming (optional)
+        message(paste("Renamed", old_name, "to", new_name, "in year", year))
+      }
+    }
+  }
+  return(data_list)
+}
+```
+
+
+```{r}
+# Функція для уніфікації типів колонок
+unify_column_types <- function(data_list) {
+  all_columns <- unique(unlist(lapply(data_list, names)))
+  
+  for (col in all_columns) {
+    column_types <- sapply(data_list, function(df) {
+      if (col %in% names(df)) class(df[[col]]) else NA
+    })
+    
+    if (length(unique(na.omit(column_types))) > 1) {
+      data_list <- lapply(data_list, function(df) {
+        if (col %in% names(df)) df[[col]] <- as.character(df[[col]])
+        return(df)
+      })
+    }
+  }
+  
+  return(data_list)
+}
+```
+
+```{r}
+merging <- function(start_year, end_year, file_type, variables){
+  data_list <- load_all_data(start_year, end_year, 
+                             file_type, variables)
+  
+  rename_mappings <- list(
+    "SECCITIZ" = "SECCITIZENSHIP",
+    "WORKSTATUSDETAIL" = "WORKSTATUS_DETAIL",
+    "SOCIOECONOMICGROUP" = "SOCIOPROFGROUP",
+    "hh_nationalityid" = "HH_NATIONALITYSTATE"
+  )
+  
+  data_list <- rename_columns(data_list, rename_mappings)
+  data_list <- unify_column_types(data_list)
+  
+  
+  merged_data <- data_list[[start_year]]
+  for (year in (start_year + 1):end_year) {
+    if (!is.null(data_list[[year]])) {
+      merged_data <- bind_rows(merged_data, data_list[[year]])
+    }
+  }
+  
+  write.csv(merged_data, paste0(file_type, "merged_data",".csv"), row.names = FALSE)
+  
+  return(merged_data)
+}
+```
+
+```{r}
+hh_data_list <- merging(2010, 2021, "hh_", hh_variables)
+```
+
+```{r}
+head(hh_data_list)
+```
+
+
+```{r}
+# Завантажуємо дані для hhm та hh окремо
+hhm_data_list <- merging(2010, 2021, "hhm_", hhm_variables)
+```
+
+```{r}
+head(hhm_data_list)
+```
+
+
