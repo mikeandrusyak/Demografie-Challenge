@@ -1,0 +1,45 @@
+---
+title: "Renamed_Columns"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+
+# Recreate data_list to ensure files load correctly
+data_list <- list()
+for (year in 2014:2015) {
+    file_path <- paste0("data/strukturerhebung/", year, "_SE_RS_CSV/zp_", year, ".csv")
+    data_list[[as.character(year)]] <- read.csv(file_path, sep = ";")
+}
+```
+
+
+```{r}
+source("Renaming_Columns.R")
+
+# Define the list of old and new names for renaming
+rename_mappings <- c(
+  "SECCITIZ" = "SECCITIZENSHIP",
+  "WORKSTATUSDETAIL" = "WORKSTATUS_DETAIL"
+)
+
+# Apply the renaming function to the data list
+data_list <- rename_columns(data_list, rename_mappings)
+```
+
+
+```{r}
+data_list[["2015"]] %>% select(SOCIOECONOMICGROUP, SOCIOPROFGROUP)
+```
+
+
+```{r}
+# Check the results for specific columns
+data_list[["2014"]] %>% select(SECCITIZENSHIP, WORKSTATUS_DETAIL)
+data_list[["2015"]] %>% select(SECCITIZENSHIP, WORKSTATUS_DETAIL)
+```
+
+```{r}
+data_list[["2014"]] %>% select(SECCITIZENSHIP, SECCITIZ)
+```

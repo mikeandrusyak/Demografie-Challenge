@@ -1,5 +1,6 @@
 ```{r}
 library(dplyr)
+source("Renaming_Columns.R")
 ```
 
 ```{r}
@@ -39,38 +40,13 @@ load_all_data <- function(start_year, end_year, file_type, variables) {
   for (year in start_year:end_year) {
     data <- load_data(year, file_type, variables)
     if (!is.null(data)) {
-      data_list[[year]] <- data
+      data_list[[as.character(year)]] <- data
     }
   }
   
   return(data_list)
 }
 ```
-
-```{r}
-# Function to rename columns across multiple data frames in a list
-rename_columns <- function(data_list, rename_mappings) {
-  # Loop through each data frame in the list
-  for (year in names(data_list)) {
-    # Loop through each old column name in the renaming mappings
-    for (old_name in names(rename_mappings)) {
-      new_name <- rename_mappings[[old_name]]
-      
-      # Check if the old name exists in the data frame for that year
-      if (old_name %in% names(data_list[[year]])) {
-        # Rename the column
-        data_list[[year]] <- data_list[[year]] %>%
-          rename(!!new_name := !!sym(old_name))
-        
-        # Print a message to confirm renaming (optional)
-        message(paste("Renamed", old_name, "to", new_name, "in year", year))
-      }
-    }
-  }
-  return(data_list)
-}
-```
-
 
 ```{r}
 # Функція для уніфікації типів колонок
@@ -102,7 +78,6 @@ merging <- function(start_year, end_year, file_type, variables){
   rename_mappings <- list(
     "SECCITIZ" = "SECCITIZENSHIP",
     "WORKSTATUSDETAIL" = "WORKSTATUS_DETAIL",
-    "SOCIOECONOMICGROUP" = "SOCIOPROFGROUP",
     "hh_nationalityid" = "HH_NATIONALITYSTATE"
   )
   
@@ -110,14 +85,14 @@ merging <- function(start_year, end_year, file_type, variables){
   data_list <- unify_column_types(data_list)
   
   
-  merged_data <- data_list[[start_year]]
+  merged_data <- data_list[[as.character(start_year)]]
   for (year in (start_year + 1):end_year) {
-    if (!is.null(data_list[[year]])) {
-      merged_data <- bind_rows(merged_data, data_list[[year]])
+    if (!is.null(data_list[[as.character(year)]])) {
+      merged_data <- bind_rows(merged_data, data_list[[as.character(year)]])
     }
   }
   
-  write.csv(merged_data, paste0(file_type, "merged_data",".csv"), row.names = FALSE)
+  write.csv(merged_data, paste0("data/", file_type, "merged_data",".csv"), row.names = FALSE)
   
   return(merged_data)
 }
@@ -130,7 +105,6 @@ hh_data_list <- merging(2010, 2021, "hh_", merged_variables)
 ```{r}
 head(hh_data_list)
 ```
-
 
 ```{r}
 # Завантажуємо дані для hhm та hh окремо
