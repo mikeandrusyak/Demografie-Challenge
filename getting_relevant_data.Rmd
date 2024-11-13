@@ -1,139 +1,59 @@
 ```{r}
 library(readxl)
 library(dplyr)
+
 ```
 
 ```{r}
-# We create a function for reading all sheets and extracting the first column
+# Function to read all sheets in an Excel file and extract the first column
 read_excel_data <- function(file_path) {
-  # We get all sheet names
   sheet_names <- excel_sheets(file_path)
+  data_list <- setNames(vector("list", length(sheet_names)), sheet_names)
   
-  # Dictionary for storing results
-  data_list <- list()
-  
-  # We go through all the sheets and extract the first column
   for (sheet in sheet_names) {
-    # Read data from each sheet
     sheet_data <- read_excel(file_path, sheet = sheet)
-    
-    # If the sheet is not empty, extract the first column
     if (ncol(sheet_data) > 0) {
-      data_list[[sheet]] <- sheet_data[[1]]
+      data_list[[sheet]] <- sheet_data[[1]]  # Extract the first column if not empty
     }
   }
-  
-  return(data_list)
+  data_list
 }
 ```
 
 ```{r}
 # Path to the folder with Excel files
 folder_path <- "data/strukturerhebung/"
-folder_path
-```
 
-```{r}
-# Get all Excel files in the folder
+# Get all Excel files in the folder that match the pattern
 file_pattern <- "do-d-40-se_user-syn-(201[0-9]|2020|2021)\\.xls"
 file_names <- list.files(folder_path, pattern = file_pattern, full.names = TRUE, recursive = TRUE)
+file_names <- file_names[!grepl("^~\\$", basename(file_names))]  # Exclude temporary files
+
+# Load variables from files
+zp_variables <- readRDS("zp_variables.rds")
+hh_variables <- readRDS("hh_variables.rds")
+hhm_variables <- readRDS("hhm_variables.rds")
+variables_list <- c(zp_variables, hh_variables, hhm_variables)
 file_names
 ```
 
 ```{r}
-# Create a dictionary to store all the results
+# Read each file and store results in a named list
 all_data <- list()
-```
-
-```{r}
-# Read each file and store the result
 for (file in file_names) {
   all_data[[basename(file)]] <- read_excel_data(file)
 }
-
-# The result will be stored in all_data, which is a list
-# all_data[[file_name]][[sheet_name]] gives access to the first column of each sheet
 ```
-```{r}
-variables_list <- cvariables_list <- c(
-"SECCITIZ", "SECCITIZENSHIP", 
-"WORKSTATUS_DETAIL", "WORKSTATUSDETAIL",
-"SOCIOECONOMICGROUP", "SOCIOPROFGROUP",
-"AGE",
-"BIRTH_CANTON", "BIRTH_CTRY", "BIRTH_MUN", "BIRTH_MUNCAT",
-"FAMILYREUNION",
-"CANCELATIONREASON",
-"MARITALSTATUS",
-"CHCOMESFROMCTRY",
-"NATIONALITYCONTI",
-"POPULATIONGROUP",
-"RES_CANTON",
-"RES_MUN",
-"RES_1YEARAGO", "RES_2YEARAGO", "RES_3YEARAGO", "RES_4YEARAGO", "RES_5YEARAGO",
-"RESIDENTPERMIT",
-"COMPLETEDEDU10", "COMPLETEDEDU11", "COMPLETEDEDU12", "COMPLETEDEDU13", 
-"COMPLETEDEDU3", "COMPLETEDEDU4", "COMPLETEDEDU5", "COMPLETEDEDU6", "COMPLETEDEDU7", 
-"COMPLETEDEDU8", "COMPLETEDEDU9",
-"HIGHESTCOMPLEDU", "HIGHESTCOMPLEDUAGGI", "HIGHESTCOMPLEDUAGGII", "HIGHESTCOMPLEDUAGGIII",
-"IN_EDUCATION",
-"SCHOOL_DISTRICT", "SCHOOL_ADDRESSCTRY", "SCHOOL_CANTON",
-"SCHOOLENPNOGA", 
-"SCHOOLENPSIZE", "SCHOOLLOCUNSECTOR",
-"LANGUAGEHOME1", "LANGUAGEHOME10", "LANGUAGEHOME11", "LANGUAGEHOME12", "LANGUAGEHOME2", "LANGUAGEHOME3", "LANGUAGEHOME4", "LANGUAGEHOME5", 
-"LANGUAGEHOME6", "LANGUAGEHOME7", "LANGUAGEHOME8", "LANGUAGEHOME9",
-"MAINLANGUAGEAGG1", "MAINLANGUAGEAGG10", "MAINLANGUAGEAGG11", "MAINLANGUAGEAGG12", "MAINLANGUAGEAGG13", "MAINLANGUAGEAGG14", 
-"MAINLANGUAGEAGG2", "MAINLANGUAGEAGG3", "MAINLANGUAGEAGG4", "MAINLANGUAGEAGG5", 
-"MAINLANGUAGEAGG6", "MAINLANGUAGEAGG7", "MAINLANGUAGEAGG8", "MAINLANGUAGEAGG9", 
-"MAINLANGUAGEI", "MAINLANGUAGEIAGG",
-"CITIZBIRTHANDTODAY", "CTRYOFBIRTHOFFATHER", "CTRYOFBIRTHOFMOTHER", "CTRYOFBIRTHOFPARENTS",
-"MIGRATIONSTATUS", "MIGRATIONSTATUSAGG",  
-"TYPEOFCITIZACQ_DI",
-"YEAROFARRIVAL", "CHARRIVALYEAR", "YEAROFCITIZACQ_SWISS",
-"DEPFORSCHOOL", "DEPFORSCHOOLCANTON", "DEPFORSCHOOLCTRY",
-"COMPANY_CANTON", "COMPANY_CTRY", "COMPANY_DISTRICT", "COMPANY_MUN", "COMPANYENPSIZE",
-"CURRACTIVITYSTATUSI", "CURRACTIVITYSTATUSII", "CURRACTIVITYSTATUSIII",
-"CURRACTIVITY_FULL", "CURRACTIVITY_PART", "CURRACTIVITY_MULTI", "CURRACTIVITY_DISOCC", "CURRACTIVITY_STUDENT", "CURRACTIVITY_HOME", 
-"CURRACTIVITY_OTHER",
-"HH_COUNTOFMALEMINOR", "HH_COUNTOFMALEU25",
-"HH_POSITION_IN_HH_BFS",
-"HH_AGE",
-"HH_CLASSAGEFIVEYEARS",
-"HH_BIRTH_CTRY",
-"HH_FAMILYREUNION",
-"HH_CANCELATIONREASON",
-"HH_CLASSOFMARITALSTATUS", "HH_MARITALSTATUS", "HH_SEPARATION",
-"HH_CHCOMESFROMCTRY", "HH_CHCOMESFROMCTRYAGG",
-"HH_COMESFROMSTATE",
-"HH_MUNSTAYDURATION", "HH_MUNSTAYYEARS",
-"HH_NATIONALITYAGG", "HH_NATIONALITYCAT", "HH_NATIONALITYCONTI", "HH_NATIONALITYSTATE",
-"HH_POPULATIONGROUP",
-"HH_REPORTINGHISTMUN",
-"HH_RES_CANTON",
-"HH_RES_MUN",
-"HH_MAINRESCATEGORY",
-"HH_RES_CTRY1YEARAGO", "HH_RES_CTRY2YEARAGO", "HH_RES_CTRY3YEARAGO", "HH_RES_CTRY4YEARAGO", "HH_RES_CTRY5YEARAGO",
-"HH_RES_HISTMUN1YEARAGO", "HH_RES_HISTMUN2YEARAGO", "HH_RES_HISTMUN3YEARAGO", "HH_RES_HISTMUN4YEARAGO", "HH_RES_HISTMUN5YEARAGO",
-"HH_RES_CANTON1YEARAGO", "HH_RES_CANTON2YEARAGO", "HH_RES_CANTON3YEARAGO", "HH_RES_CANTON4YEARAGO", "HH_RES_CANTON5YEARAGO",
-"HH_RES_MUN1YEARAGO", "HH_RES_MUN2YEARAGO", "HH_RES_MUN3YEARAGO", "HH_RES_MUN4YEARAGO", "HH_RES_MUN5YEARAGO",
-"HH_RESIDENTPERMIT",
-"HH_HIGHESTCOMPLEDUAGGI", "HH_HIGHESTCOMPLEDUAGGII", "HH_HIGHESTCOMPLEDUAGGIII",
-"HH_MAINLANGUAGEAGG1", "HH_MAINLANGUAGEAGG2", "HH_MAINLANGUAGEAGG3", "HH_MAINLANGUAGEAGG4", "HH_MAINLANGUAGEAGG5", 
-"HH_MAINLANGUAGEAGG6", "HH_MAINLANGUAGEAGG7", "HH_MAINLANGUAGEAGG8", "HH_MAINLANGUAGEAGG9", "HH_MAINLANGUAGEAGG14",
-"HH_CURRACTIVITYSTATUSI", "HH_CURRACTIVITYSTATUSII", "HH_CURRACTIVITYSTATUSIII",
-"HH_COUNTOFFEMALEMINOR", "HH_COUNTOFFEMALEU25", "HH_COUNTOFPERSON", 
-"HH_FAMU25", "HH_FAMU25_PARENTS", "HH_FAMU18", "HH_FAMU18_PARENTS", "HH_SIZE_16",
-"HH_FAMU25_CHILDREN", "HH_FAMU18_CHILDREN",
-"HH_NATAGG_GROUPS", "HH_NATCAT_GROUPS",
-"HH_HEDUAGGI_OLD_30", "HH_HEDUAGGI_OLD_25", "HH_HEDUAGGI_COUPLES",
-"GKATS", "GBAUPS", "GASTWS", "GAZWOT",
-"NUMBEROFROOMS",
-"TYPEOFOWNERSHIP",
-"RENTNET",
-"WAREAS",
-"HH_CURRACTSTI_GROUPS",
-"HH_OCC_MODEL"
-)
 
+```{r}
+# Завантаження змінних з файлів
+zp_variables <- readRDS("zp_variables.rds")
+hh_variables <- readRDS("hh_variables.rds")
+hhm_variables <- readRDS("hhm_variables.rds")
+```
+
+```{r}
+variables_list <- c(zp_variables,hh_variables,hhm_variables)
 ```
 
 ```{r}
@@ -144,40 +64,32 @@ file_names
 ```
 
 ```{r}
-# Prepare an empty matrix for the results
-result_matrix <- matrix(0, nrow = length(variables_list), ncol = length(file_names))
-rownames(result_matrix) <- variables_list
-colnames(result_matrix) <- file_names
+# Create an empty data frame to store results with variables as row names
+result_df <- data.frame(matrix(0, nrow = length(variables_list), ncol = length(file_names)),
+                        row.names = variables_list)
+colnames(result_df) <- file_names
 ```
 
 ```{r}
-# Checking each sheet in the file
-for (file_idx in seq_along(file_names)) {
-  file <- file_names[file_idx]
-  for (var_idx in seq_along(variables_list)) {
-    var <- variables_list[var_idx]
+# Check if each variable is found in any sheet of each file
+for (file in file_names) {
+  file_basename <- basename(file)
+  
+  for (var in variables_list) {
+    found <- FALSE
     
-    found <- FALSE  # Flag to check if the variable is found
-    
-    for (sheet in sheet_names[[file]]) {
-      # Get the data from the sheet
-      sheet_data <- all_data[[file]][[sheet]]
+    for (sheet in names(all_data[[file_basename]])) {
+      sheet_data <- unlist(all_data[[file_basename]][[sheet]])
       
-      # Check if the sheet data is a list or vector
-      if (is.list(sheet_data) || is.vector(sheet_data)) {
-        # Check if the variable is present in this list or vector
-        if (var %in% unlist(sheet_data)) {  # unlist converts the list into a vector
-          found <- TRUE
-          break  # Exit the loop if found
-        }
+      if (var %in% sheet_data) {
+        result_df[var, file_basename] <- 1
+        found <- TRUE
+        break  # Stop searching this file if variable is found
       }
     }
     
-    # Store the result: 1 if found, 0 if not found
-    if (found) {
-      result_matrix[var_idx, file_idx] <- 1
-    } else {
-      result_matrix[var_idx, file_idx] <- 0
+    if (!found) {
+      result_df[var, file_basename] <- 0
     }
   }
 }
