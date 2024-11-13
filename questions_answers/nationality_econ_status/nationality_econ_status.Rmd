@@ -1,0 +1,12 @@
+```{r}
+file_path <-  '../../data/hh_merged_data.csv'
+```
+
+```{r}
+hh_merged_data <- read.csv(file_path, sep=',')
+```
+
+```{r}
+head(hh_merged_data)
+```
+
