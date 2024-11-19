@@ -5,13 +5,14 @@ source("Renaming_Columns.R")
 
 ```{r}
 # Завантаження змінних з файлів
-zp_variables <- readRDS("zp_variables.rds")
-hh_variables <- readRDS("hh_variables.rds")
-hhm_variables <- readRDS("hhm_variables.rds")
+path_save = "questions_answers/nationality_econ_status/"
+vatriables_zp <- readRDS(paste0(path_save,"vatriables_zp.rds"))
+variables_hh <- readRDS(paste0(path_save,"variables_hh.rds"))
+variables_hhm <- readRDS(paste0(path_save,"variables_hhm.rds"))
 ```
 
 ```{r}
-merged_variables <- c(zp_variables,hh_variables)
+merged_variables <- c(vatriables_zp,variables_hh)
 ```
 
 ```{r}
@@ -20,7 +21,12 @@ load_data <- function(year, file_type, variables) {
   file_path <- paste0("data/strukturerhebung/", year, "_SE_RS_CSV/", file_type, year, ".csv")
   
   if (file.exists(file_path)) {
+    if (year == 2011 & file_type == "hhm_"){
+      data <- read.csv(file_path, sep = ",")
+    }else{
     data <- read.csv(file_path, sep = ";")
+    }
+    colnames(data) <- toupper(colnames(data))
     data$YEAR_QUIZ <- year
     data <- data %>% select(any_of(c(variables, "YEAR_QUIZ")))
     return(data)
@@ -77,7 +83,7 @@ merging <- function(start_year, end_year, file_type, variables){
   
   rename_mappings <- list(
     "SECCITIZ" = "SECCITIZENSHIP",
-    "WORKSTATUSDETAIL" = "WORKSTATUS_DETAIL",
+    "WORKSTATUSDETAIL" = "WORKSTATUS_DETAIL"
   )
   
   data_list <- rename_columns(data_list, rename_mappings)
@@ -91,27 +97,24 @@ merging <- function(start_year, end_year, file_type, variables){
     }
   }
   
-  write.csv(merged_data, paste0("data/", file_type, "merged_data",".csv"), row.names = FALSE)
+  write.csv(merged_data, paste0("questions_answers/nationality_econ_status/", file_type, "merged_data",".csv"), row.names = FALSE)
   
   return(merged_data)
 }
 ```
 
 ```{r}
-hh_data_list <- merging(2010, 2021, "hh_", merged_variables)
+hh_data_list <- merging(2010, 2021, "zp_", c("HOUSEHOLDYEARLYID", vatriables_zp))
 ```
 
+
 ```{r}
-head(hh_data_list)
+hh_data_list <- merging(2010, 2021, "hh_", c("HOUSEHOLDYEARLYID", variables_hh))
 ```
 
 ```{r}
 # Завантажуємо дані для hhm та hh окремо
-hhm_data_list <- merging(2010, 2021, "hhm_", hhm_variables)
-```
-
-```{r}
-head(hhm_data_list)
+hhm_data_list <- merging(2010, 2021, "hhm_", c("HOUSEHOLDYEARLYID",variables_hhm))
 ```
 
 
