@@ -60,9 +60,6 @@ variables_list <- c(zp_variables,hh_variables,hhm_variables)
 # Create a table for the results
 file_names <- names(all_data) # file names
 sheet_names <- lapply(all_data, names) # sheet names in each file
-<<<<<<< Updated upstream
-file_names
-=======
 ```
 
 
@@ -88,7 +85,6 @@ saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
 saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
 saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
 saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
->>>>>>> Stashed changes
 ```
 
 ```{r}
