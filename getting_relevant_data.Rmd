@@ -57,7 +57,7 @@ variables_hh <- c("HH_NATAGG_GROUPS", "HH_NATCAT_GROUPS","HOUSEHOLDYEARLYID")
 variables_hhm <- c("HOUSEHOLDYEARLYID","HH_AGE", "HH_FAMILYREUNION", "HH_MARITALSTATUS", "HH_CLASSOFMARITALSTATUS",
                    "HH_NATIONALITYAGG", "HH_NATIONALITYCAT", "HH_NATIONALITYCONTI", "HH_NATIONALITYID",
                    "HH_NATIONALITYSTATE", "HH_SEX")
-variables_list <- c(variables_zp, variables_hh, variables_hhm)
+variables_list <- unique(c(variables_zp, variables_hh, variables_hhm))
 ```
 
 ```{r}
@@ -112,5 +112,4 @@ vis_value(result_df)
 ```{r}
 result_df %>% filter(`do-d-40-se_user-syn-2019.xlsx` == 0) %>% rownames(.)
 ```
-
 

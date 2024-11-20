@@ -6,7 +6,7 @@ source("Renaming_Columns.R")
 ```{r}
 # Завантаження змінних з файлів
 path_save = "questions_answers/nationality_econ_status/"
-vatriables_zp <- readRDS(paste0(path_save,"vatriables_zp.rds"))
+variables_zp <- readRDS(paste0(path_save,"variables_zp.rds"))
 variables_hh <- readRDS(paste0(path_save,"variables_hh.rds"))
 variables_hhm <- readRDS(paste0(path_save,"variables_hhm.rds"))
 ```
@@ -104,7 +104,7 @@ merging <- function(start_year, end_year, file_type, variables){
 ```
 
 ```{r}
-hh_data_list <- merging(2010, 2021, "zp_", c("HOUSEHOLDYEARLYID", vatriables_zp))
+hh_data_list <- merging(2010, 2021, "zp_", c("HOUSEHOLDYEARLYID", variables_zp))
 ```
 
 
@@ -116,5 +116,3 @@ hh_data_list <- merging(2010, 2021, "hh_", c("HOUSEHOLDYEARLYID", variables_hh))
 # Завантажуємо дані для hhm та hh окремо
 hhm_data_list <- merging(2010, 2021, "hhm_", c("HOUSEHOLDYEARLYID",variables_hhm))
 ```
-
-
