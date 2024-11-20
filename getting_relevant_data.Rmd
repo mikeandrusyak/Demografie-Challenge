@@ -60,7 +60,35 @@ variables_list <- c(zp_variables,hh_variables,hhm_variables)
 # Create a table for the results
 file_names <- names(all_data) # file names
 sheet_names <- lapply(all_data, names) # sheet names in each file
+<<<<<<< Updated upstream
 file_names
+=======
+```
+
+
+```{r}
+variables_zp <- c("WORKSTATUS","WORKSTATUSDETAIL", "WORKSTATUS_DETAIL","CURRACTIVITY_FULL",
+                   "CURRACTIVITY_PART", "CURRACTIVITY_MULTI","CURRACTIVITY_DISOCC",
+                   "CURRACTIVITY_STUDENT", "COMPANY_DISTRICT","COMPANY_CANTON", 
+                   "CHARRIVALYEAR", "YEAROFARRIVAL", "YEAROFCITIZACQ_SWISS","MIGRATIONSTATUS",
+                   "CITIZBIRTHANDTODAY", "RESIDENTPERMIT", "SEX","RES_CANTON", "NATIONALITYAGG", 
+                   "NATIONALITYCAT", "NATIONALITYCONTI","NATIONALITYID", "NATIONALITYSTATE",
+                   "AGE","TIMEWORKEDPERWEEKSUM","STATUSINEMPLOYMENT","STATUSINEMPLDETAIL", "STATUSINEMPL_DETAIL",
+                   "PROTECTEDWORKPLACE","CURROCCUPATIONISCOAGG","CURROCCUPATIONISCO")
+variables_hh <- c("HH_NATAGG_GROUPS", "HH_NATCAT_GROUPS","HOUSEHOLDYEARLYID")
+variables_hhm <- c("HOUSEHOLDYEARLYID","HH_AGE", "HH_FAMILYREUNION", "HH_MARITALSTATUS", "HH_CLASSOFMARITALSTATUS",
+                   "HH_NATIONALITYAGG", "HH_NATIONALITYCAT", "HH_NATIONALITYCONTI", "HH_NATIONALITYID",
+                   "HH_NATIONALITYSTATE", "HH_SEX")
+variables_list <- unique(c(variables_zp, variables_hh, variables_hhm))
+```
+
+```{r}
+path_save = "questions_answers/nationality_econ_status/"
+saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
+saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
+saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
+saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
+>>>>>>> Stashed changes
 ```
 
 ```{r}
