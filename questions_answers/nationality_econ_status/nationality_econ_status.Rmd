@@ -1,4 +1,9 @@
 ```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
 zp_merged_data <- read.csv("zp_merged_data.csv")
 hh_merged_data <- read.csv("hh_merged_data.csv")
 hhm_merged_data <- read.csv("hhm_merged_data.csv")
@@ -13,3 +18,91 @@ summary(hh_merged_data)
 ```{r}
 summary(hhm_merged_data)
 ```
+```{r}
+selected_data <- zp_merged_data %>% select(HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
+                          NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
+                          WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
+                          STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
+                          CURROCCUPATIONISCO)
+```
+
+```{r}
+summary(selected_data)
+```
+```{r}
+selected_data <- selected_data %>% mutate(
+  NATIONALITYCONTI = case_when(NATIONALITYCONTI == 1 ~ "Schweiz",
+            NATIONALITYCONTI == 2 ~ "Mitgliedstaat der Europäischen Union (EU)",
+            NATIONALITYCONTI == 3 ~ "Mitgliedstaat der EFTA",
+            NATIONALITYCONTI == 4 ~ "Anderer europäischer Staat",
+            NATIONALITYCONTI == 5 ~ "Afrika",
+            NATIONALITYCONTI == 6 ~ "Nordamerika",
+            NATIONALITYCONTI == 7 ~ "Lateinamerika und Karibik",
+            NATIONALITYCONTI == 8 ~ "Asien",
+            NATIONALITYCONTI == 9 ~ "Ozeanien",
+  )
+)
+```
+
+```{r}
+selected_data <- selected_data %>% mutate(
+  NATIONALITYCAT = case_when(NATIONALITYCAT == 1 ~ "Schweiz",
+            NATIONALITYCAT == 2 ~ "Ausländer",
+
+  )
+)
+```
+
+
+```{r}
+head(selected_data)
+```
+```{r}
+box_plot <- function(df,cat,value){
+  df %>% 
+    filter({{cat}}>0 & {{value}}> 0) %>% 
+    ggplot(aes(x={{cat}}, y={{value}}, fill = {{cat}}))+
+    geom_boxplot(na.rm = TRUE)+
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
+      axis.text.y = element_text(size = 10),                       
+      legend.text = element_text(size = 10),                    
+      plot.margin = margin(10, 20, 10, 10)  
+  )
+}
+```
+
+
+```{r}
+box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
+```
+```{r}
+box_plot(selected_data, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM)
+```
+```{r}
+unique(pull(selected_data, CURROCCUPATIONISCO))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
