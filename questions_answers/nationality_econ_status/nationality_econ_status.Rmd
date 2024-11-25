@@ -1,6 +1,7 @@
 ```{r}
 library(dplyr)
 library(ggplot2)
+library(purrr)
 ```
 
 ```{r}
@@ -23,36 +24,72 @@ selected_data <- zp_merged_data %>% select(HOUSEHOLDYEARLYID, NATIONALITYAGG, NA
                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
-                          CURROCCUPATIONISCO)
+                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG)
 ```
 
 ```{r}
 summary(selected_data)
 ```
 ```{r}
-selected_data <- selected_data %>% mutate(
-  NATIONALITYCONTI = case_when(NATIONALITYCONTI == 1 ~ "Schweiz",
-            NATIONALITYCONTI == 2 ~ "Mitgliedstaat der Europäischen Union (EU)",
-            NATIONALITYCONTI == 3 ~ "Mitgliedstaat der EFTA",
-            NATIONALITYCONTI == 4 ~ "Anderer europäischer Staat",
-            NATIONALITYCONTI == 5 ~ "Afrika",
-            NATIONALITYCONTI == 6 ~ "Nordamerika",
-            NATIONALITYCONTI == 7 ~ "Lateinamerika und Karibik",
-            NATIONALITYCONTI == 8 ~ "Asien",
-            NATIONALITYCONTI == 9 ~ "Ozeanien",
+decode <- function(df, var, decode_mapping) {
+  # Перетворюємо ключі у списку на текст
+  for (key in names(decode_mapping)) {
+    value <- decode_mapping[[key]]
+    df <- df %>%
+      mutate({{ var }} := case_match(
+        as.character({{ var }}),  # Перетворюємо значення змінної на текст
+        key ~ value,              # Зіставляємо ключ зі значенням
+        .default = as.character({{ var }})  # Залишаємо оригінальне значення, якщо немає відповідності
+      ))
+  }
+  return(df)
+}
+```
+
+```{r}
+selected_data <- decode(selected_data, CURROCCUPATIONISCOAGG, list(
+    "1" = "Führungskräfte",
+    "2" = "Akademische Berufe",
+    "3" = "Techniker und gleichrangige Berufe",
+    "4" = "Bürokräfte und verwandte Berufe",
+    "5" = "Dienstleistungsberufe und Verkäufer",
+    "6" = "Fachkräfte in Land- und Forstwirtschaft",
+    "7" = "Handwerks- und verwandte Berufe",
+    "8" = "Anlagen und Maschinenbediener, Montierer",
+    "9" = "Hilfsarbeitskräfte",
+    "0" = "Angehörige der regulären Streitkräfte",
+    "-9" = NA,
+    "-8" = NA,
+    "-7" = NA
+  )
+)
+  
+```
+
+
+```{r}
+selected_data <- decode(selected_data, NATIONALITYCONTI, list(
+    "1" = "Schweiz",
+    "2" = "Mitgliedstaat der Europäischen Union (EU)",
+    "3" = "Mitgliedstaat der EFTA",
+    "4" = "Anderer europäischer Staat",
+    "5" = "Afrika",
+    "6" = "Nordamerika",
+    "7" = "Lateinamerika und Karibik",
+    "8" = "Asien",
+    "9" = "Ozeanien"
   )
 )
 ```
 
 ```{r}
-selected_data <- selected_data %>% mutate(
-  NATIONALITYCAT = case_when(NATIONALITYCAT == 1 ~ "Schweiz",
-            NATIONALITYCAT == 2 ~ "Ausländer",
-
+selected_data <- decode(selected_data, NATIONALITYCAT, list(
+    "1" = "Schweiz",
+    "2" = "Ausländer",
+    "-9" = NA
   )
 )
 ```
-
 
 ```{r}
 head(selected_data)
@@ -80,7 +117,38 @@ box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
 box_plot(selected_data, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM)
 ```
 ```{r}
-unique(pull(selected_data, CURROCCUPATIONISCO))
+for (year in 2010:2021){
+    chart <- selected_data %>% 
+      filter(YEAR_QUIZ == year & !is.na(CURROCCUPATIONISCOAGG)) %>% 
+      mutate(CURROCCUPATIONISCOAGG = factor(CURROCCUPATIONISCOAGG, levels = c(
+         "Führungskräfte", "Akademische Berufe", 
+         "Techniker und gleichrangige Berufe", 
+         "Bürokräfte und verwandte Berufe",
+         "Dienstleistungsberufe und Verkäufer",
+         "Fachkräfte in Land- und Forstwirtschaft",
+         "Handwerks- und verwandte Berufe",
+         "Anlagen und Maschinenbediener, Montierer",
+         "Hilfsarbeitskräfte",
+         "Angehörige der regulären Streitkräfte",
+         NA))) %>% 
+      ggplot(aes(x=CURROCCUPATIONISCOAGG, fill = NATIONALITYCAT))+
+      geom_bar(position = "fill", na.rm = TRUE)+
+      geom_text(
+        aes(label = scales::percent(after_stat(count) / 
+                                      tapply(after_stat(count), after_stat(x), sum)[after_stat(x)])),
+        stat = "count",
+        position = position_fill(vjust = 0.5),
+        size = 3
+      ) +
+      labs(title = paste("Year:", year), x = "Occupation", y = "Proportion") +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
+        axis.text.y = element_text(size = 10),                       
+        legend.text = element_text(size = 10),                    
+        plot.margin = margin(10, 20, 10, 10)  
+      )
+  print(chart)
+}
 ```
 
 

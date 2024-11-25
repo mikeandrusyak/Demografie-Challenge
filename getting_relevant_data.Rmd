@@ -51,21 +51,26 @@ variables_zp <- c("WORKSTATUS","WORKSTATUSDETAIL", "WORKSTATUS_DETAIL","CURRACTI
                    "CHARRIVALYEAR", "YEAROFARRIVAL", "YEAROFCITIZACQ_SWISS","MIGRATIONSTATUS",
                    "CITIZBIRTHANDTODAY", "RESIDENTPERMIT", "SEX","RES_CANTON", "NATIONALITYAGG", 
                    "NATIONALITYCAT", "NATIONALITYCONTI","NATIONALITYID", "NATIONALITYSTATE",
-                   "AGE","TIMEWORKEDPERWEEKSUM","STATUSINEMPLOYMENT","STATUSINEMPLDETAIL", "STATUSINEMPL_DETAIL",
-                   "PROTECTEDWORKPLACE","CURROCCUPATIONISCOAGG","CURROCCUPATIONISCO")
+                   "AGE","TIMEWORKEDPERWEEKSUM","STATUSINEMPLOYMENT","STATUSINEMPLDETAIL",
+                  "STATUSINEMPL_DETAIL","PROTECTEDWORKPLACE","CURROCCUPATIONISCOAGG",
+                  "CURROCCUPATIONISCO","CURROCCUPATIONSBN", 
+                  "CURROCCUPATIONSBNAGG","HOUSEHOLDYEARLYID","CURRACTIVITYSTATUSI",
+                  "CURRACTIVITYSTATUSII","CURRACTIVITYSTATUSIII")
 variables_hh <- c("HH_NATAGG_GROUPS", "HH_NATCAT_GROUPS","HOUSEHOLDYEARLYID")
-variables_hhm <- c("HOUSEHOLDYEARLYID","HH_AGE", "HH_FAMILYREUNION", "HH_MARITALSTATUS", "HH_CLASSOFMARITALSTATUS",
-                   "HH_NATIONALITYAGG", "HH_NATIONALITYCAT", "HH_NATIONALITYCONTI", "HH_NATIONALITYID",
+variables_hhm <- c("HOUSEHOLDYEARLYID","HH_AGE", "HH_FAMILYREUNION", 
+                   "HH_MARITALSTATUS", "HH_CLASSOFMARITALSTATUS",
+                   "HH_NATIONALITYAGG", "HH_NATIONALITYCAT", 
+                   "HH_NATIONALITYCONTI", "HH_NATIONALITYID",
                    "HH_NATIONALITYSTATE", "HH_SEX")
 variables_list <- unique(c(variables_zp, variables_hh, variables_hhm))
 ```
 
 ```{r}
-# path_save = "questions_answers/nationality_econ_status/"
-# saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
-# saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
-# saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
-# saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
+path_save = "questions_answers/nationality_econ_status/"
+saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
+saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
+saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
+saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
 ```
 
 ```{r}
@@ -110,6 +115,6 @@ print(result_df)
 vis_value(result_df)
 ```
 ```{r}
-result_df %>% filter(`do-d-40-se_user-syn-2019.xlsx` == 0) %>% rownames(.)
+result_df %>% filter(`do-d-40-se_user-syn-2020.xlsx` == 0) %>% rownames(.)
 ```
 

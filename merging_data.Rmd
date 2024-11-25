@@ -12,7 +12,7 @@ variables_hhm <- readRDS(paste0(path_save,"variables_hhm.rds"))
 ```
 
 ```{r}
-merged_variables <- c(vatriables_zp,variables_hh)
+merged_variables <- c(variables_zp,variables_hh)
 ```
 
 ```{r}
