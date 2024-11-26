@@ -61,11 +61,10 @@ variables_list <- unique(c(variables_zp, variables_hh, variables_hhm))
 ```
 
 ```{r}
-# path_save = "questions_answers/nationality_econ_status/"
-# saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
-# saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
-# saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
-# saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
+path_save = "questions_answers/Level_education-current_employment?-Ivan/"
+saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
+saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
+saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
 ```
 
 ```{r}

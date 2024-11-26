@@ -4,30 +4,22 @@ library(dplyr)
 library(ggplot2)
 ```
 
+
 ```{r}
-file_path <- "../../data/hh_merged_data.csv"
-source_data <- read.csv(file_path)
-summary(source_data)
+zp_merged_data <- read.csv("zp_merged_data.csv")
+hh_merged_data <- read.csv("hh_merged_data.csv")
+hhm_merged_data <- read.csv("hhm_merged_data.csv")
 ```
 
 
 ```{r}
 #26 variables
-selected_data <- select(source_data, 
-  COMPLETEDEDU10, COMPLETEDEDU11, COMPLETEDEDU12, COMPLETEDEDU13, COMPLETEDEDU2, 
-  COMPLETEDEDU3, COMPLETEDEDU4, COMPLETEDEDU5, COMPLETEDEDU6, COMPLETEDEDU7, 
-  COMPLETEDEDU8, COMPLETEDEDU9, HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGI, 
-  HIGHESTCOMPLEDUAGGII, HIGHESTCOMPLEDUAGGIII, IN_EDUCATION,
-  CURRACTIVITYSTATUSI, CURRACTIVITYSTATUSII, CURRACTIVITYSTATUSIII, 
-  CURRACTIVITY_FULL, CURRACTIVITY_PART, CURRACTIVITY_MULTI, CURRACTIVITY_DISOCC, 
-  CURRACTIVITY_STUDENT, CURRACTIVITY_HOME,
-)
+selected_data_zp <- zp_merged_data
+selected_data_hh <- select(hh_merged_data)
+selected_data_hhm <- select(hhm_merged_data)
 
-# Заменяем NA на медиану для числовых колонок
-selected_data <- selected_data %>%
-  mutate(across(where(is.numeric), ~ ifelse(is.na(.), median(., na.rm = TRUE), .)))
 
-head(selected_data)
+
 summary(selected_data)
 ```
 
