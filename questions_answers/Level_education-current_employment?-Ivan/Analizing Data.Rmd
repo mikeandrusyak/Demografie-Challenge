@@ -1,0 +1,256 @@
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+file_path <- "../../data/hh_merged_data.csv"
+source_data <- read.csv(file_path)
+summary(source_data)
+```
+
+
+```{r}
+#26 variables
+selected_data <- select(source_data, 
+  COMPLETEDEDU10, COMPLETEDEDU11, COMPLETEDEDU12, COMPLETEDEDU13, COMPLETEDEDU2, 
+  COMPLETEDEDU3, COMPLETEDEDU4, COMPLETEDEDU5, COMPLETEDEDU6, COMPLETEDEDU7, 
+  COMPLETEDEDU8, COMPLETEDEDU9, HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGI, 
+  HIGHESTCOMPLEDUAGGII, HIGHESTCOMPLEDUAGGIII, IN_EDUCATION,
+  CURRACTIVITYSTATUSI, CURRACTIVITYSTATUSII, CURRACTIVITYSTATUSIII, 
+  CURRACTIVITY_FULL, CURRACTIVITY_PART, CURRACTIVITY_MULTI, CURRACTIVITY_DISOCC, 
+  CURRACTIVITY_STUDENT, CURRACTIVITY_HOME,
+)
+
+# Заменяем NA на медиану для числовых колонок
+selected_data <- selected_data %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.na(.), median(., na.rm = TRUE), .)))
+
+head(selected_data)
+summary(selected_data)
+```
+
+
+
+```{r}
+
+decoded_data <- selected_data
+edu_decode_Ja <- function(df, column_name) {
+  df %>%
+    mutate(!!sym(column_name) := case_when(
+      !!sym(column_name) == 0 ~ "Nein",
+      !!sym(column_name) == 1 ~ "Ja",
+      TRUE ~ as.character(!!sym(column_name))
+    ))
+}
+columns_to_decode <- c("COMPLETEDEDU10", "COMPLETEDEDU11", "COMPLETEDEDU12", 
+                       "COMPLETEDEDU13", "COMPLETEDEDU2", "COMPLETEDEDU3", 
+                       "COMPLETEDEDU4", "COMPLETEDEDU5", "COMPLETEDEDU6", 
+                       "COMPLETEDEDU7", "COMPLETEDEDU8", "COMPLETEDEDU9", 
+                       "CURRACTIVITY_FULL", "CURRACTIVITY_PART", 
+                       "CURRACTIVITY_MULTI", "CURRACTIVITY_DISOCC", 
+                       "CURRACTIVITY_STUDENT", "CURRACTIVITY_HOME", 
+                       "IN_EDUCATION")
+
+for (col in columns_to_decode) {
+  decoded_data <- edu_decode_Ja(decoded_data, col)
+}
+```
+
+
+
+
+```{r}
+
+decoded_data <- decoded_data %>%
+  mutate(
+    CURRACTIVITYSTATUSI = case_when(
+      CURRACTIVITYSTATUSI == 1 ~ "Erwerbstätige",
+      CURRACTIVITYSTATUSI == 2 ~ "Erwerbslose",
+      CURRACTIVITYSTATUSI == 3 ~ "Nichterwerbspersonen",
+      TRUE ~ as.character(CURRACTIVITYSTATUSI)
+    ),
+    CURRACTIVITYSTATUSII = case_when(
+      CURRACTIVITYSTATUSII == 1 ~ "Vollzeiterwerbstätige",
+      CURRACTIVITYSTATUSII == 2 ~ "Teilzeiterwerbstätige",
+      CURRACTIVITYSTATUSII == 3 ~ "Erwerbslose",
+      CURRACTIVITYSTATUSII == 4 ~ "Nichterwerbspersonen",
+      TRUE ~ as.character(CURRACTIVITYSTATUSII)
+    ),
+    CURRACTIVITYSTATUSIII = case_when(
+      CURRACTIVITYSTATUSIII == 1 ~ "Vollzeiterwerbstätige (90-100%)",
+      CURRACTIVITYSTATUSIII == 2 ~ "Teilzeiterwerbstätige I (70-89%)",
+      CURRACTIVITYSTATUSIII == 3 ~ "Teilzeiterwerbstätige II (50-69%)",
+      CURRACTIVITYSTATUSIII == 4 ~ "Teilzeiterwerbstätige III (weniger als 50%)",
+      CURRACTIVITYSTATUSIII == 5 ~ "Erwerbslose",
+      CURRACTIVITYSTATUSIII == 6 ~ "Nichterwerbspersonen in Ausbildung",
+      CURRACTIVITYSTATUSIII == 7 ~ "Hausfrauen/Hausmänner",
+      CURRACTIVITYSTATUSIII == 8 ~ "Rentner/innen (AHV, IV)",
+      CURRACTIVITYSTATUSIII == 9 ~ "Andere Nichterwerbspersonen",
+      TRUE ~ as.character(CURRACTIVITYSTATUSIII)
+    ),
+    HIGHESTCOMPLEDUAGGI = case_when(
+      HIGHESTCOMPLEDUAGGI == 1 ~ "Sekundarstufe 1",
+      HIGHESTCOMPLEDUAGGI == 2 ~ "Sekundarstufe 2",
+      HIGHESTCOMPLEDUAGGI == 3 ~ "Tertiärstufe",
+      TRUE ~ as.character(HIGHESTCOMPLEDUAGGI)
+    ),
+    HIGHESTCOMPLEDUAGGII = case_when(
+      HIGHESTCOMPLEDUAGGII == 1 ~ "Keine oder bis 7 Jahre obligatorische Schule",
+      HIGHESTCOMPLEDUAGGII == 2 ~ "Obligatorische Schule (8 oder 9 Jahre), 10. Schuljahr/Vorlehre oder anderes Brückenangebot",
+      HIGHESTCOMPLEDUAGGII == 3 ~ "Berufliche Grundbildung (Anlehre, 2- bis 4-jährige Lehre oder Vollzeitberufsschule, Handelsdiplom, Lehrwerkstätte или ähnliche Ausbildung)",
+      HIGHESTCOMPLEDUAGGII == 4 ~ "Allgemeinbildende Schule (Gymnasiale Maturität, Berufs- oder Fachmaturität, Lehrkräfte-Semинар, Diplom- или Fachmittelschule, Verkehrsschule или ähnliche Ausbildung)",
+      HIGHESTCOMPLEDUAGGII == 5 ~ "Höhere Fach- и Berufsausbildung mit eidg. Fachausweis, Diplom или Meisterdiplom, Technikerschule, höhere Fachschule, HTL, HWV, HFG, HFS или ähnliche Ausbildung",
+      HIGHESTCOMPLEDUAGGII == 6 ~ "Universität, ETH, pädagogische Hochschule, Fachhochschule",
+      TRUE ~ as.character(HIGHESTCOMPLEDUAGGII)
+    ),
+    HIGHESTCOMPLEDUAGGIII = case_when(
+      HIGHESTCOMPLEDUAGGIII == 1 ~ "Ohne nachobligatorische Ausbildung",
+      HIGHESTCOMPLEDUAGGIII == 2 ~ "Sekundarstufe 2: Berufsbildung",
+      HIGHESTCOMPLEDUAGGIII == 3 ~ "Sekundarstufe 2: Allgemeinbildung",
+      HIGHESTCOMPLEDUAGGIII == 4 ~ "Tertiärstufe: Höhere Berufsbildung",
+      HIGHESTCOMPLEDUAGGIII == 5 ~ "Tertiärstufe: Hochschulen",
+      TRUE ~ as.character(HIGHESTCOMPLEDUAGGIII)
+    ),
+    HIGHESTCOMPLEDU = case_when(
+      HIGHESTCOMPLEDU == 1 ~ "Keine",
+      HIGHESTCOMPLEDU == 2 ~ "Bis max. 7 Jahre obligatorische Schule",
+      HIGHESTCOMPLEDU == 3 ~ "Obligatorische Schule (Real-, Sekundar-, Bezirks-, Orientierungsschule, Pro-, Untergymnasium, Sonderschule)",
+      HIGHESTCOMPLEDU == 4 ~ "1-jährige Vorlehre, 1-jährige allgemeinbildende Schule, 10. Schuljahr, 1-jährige Berufswahlschule, Haushaltslehrjahr, Sprachschule (mind. 1 Jahr) mit Schlusszertifikat, Sozialjahr, Brückenangebote oder ähnliche Ausbildung",
+      HIGHESTCOMPLEDU == 5 ~ "2- bis 3-jährige Diplommittelschule, Verkehrsschule, Fachmittelschule FMS или ähnliche Ausbildung",
+      HIGHESTCOMPLEDU == 6 ~ "Berufliche Grundbildung (Anlehre, 2- bis 4-jährige Berufslehre или Vollzeitberufsschule, Handelsдiplом, Lehrwerkstätte или ähnliche Ausbildung)",
+      HIGHESTCOMPLEDU == 7 ~ "Gymnasiale Maturität, Lehrkräfte-Semинар (vorbereitende Ausbildung für Lehrkräfte von Kindergarten, Primarschule, Handarbeit, Hauswirtschaft)",
+      HIGHESTCOMPLEDU == 8 ~ "Berufs- oder Fachmaturität",
+      HIGHESTCOMPLEDU == 9 ~ "Höhere Fach- und Berufsausbildung mit eidg. Fachausweis, eidg. Diplom или Meisterprüfung, höhere Fachschule für Technik (Technikerschule TS), für Wirtschaft (HKG) или ähnliche höhere Fachschule",
+      HIGHESTCOMPLEDU == 10 ~ "Höhere Fachschule (Vorgänger von Fachhochschulen, z.B. HTL, HWV, HFG, HFS)",
+      HIGHESTCOMPLEDU == 11 ~ "Bachelor (Universität, ETH, Fachhochschule, pädagogische Hochschule)",
+      HIGHESTCOMPLEDU == 12 ~ "Master, Lizentiat, Diplom, Staatsexamen, Nachdiplom (Universität, ETH, Fachhochschule)",
+      HIGHESTCOMPLEDU == 13 ~ "Doktorat, Habilitation",
+      TRUE ~ as.character(HIGHESTCOMPLEDU)
+    )
+  )
+
+```
+
+
+```{r}
+head(decoded_data)
+```
+
+
+```{r}
+decoded_data <- decoded_data %>%
+  filter(if_all(everything(), ~ . != "-9"))
+
+```
+
+
+```{r}
+table(decoded_data$HIGHESTCOMPLEDUAGGI)
+```
+
+```{r}
+
+employment_data <- decoded_data %>%
+  filter(!is.na(HIGHESTCOMPLEDUAGGI), CURRACTIVITYSTATUSI == "Erwerbstätige") %>% 
+  group_by(HIGHESTCOMPLEDUAGGI) %>%
+  summarise(
+    total = n(),
+    employed = sum(CURRACTIVITY_FULL == "Ja", na.rm = TRUE), 
+    employment_rate = (employed / total) * 100 
+  ) %>%
+  arrange(desc(employment_rate))
+
+
+ggplot(employment_data, aes(x = reorder(HIGHESTCOMPLEDUAGGI, -employment_rate), y = employment_rate)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    title = "Корреляция между уровнем образования и процентом занятости",
+    x = "Level of education",
+    y = "employement (%)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+```{r}
+employment_type_data <- decoded_data %>%
+  filter(!is.na(HIGHESTCOMPLEDUAGGI)) %>%
+  mutate(employment_type = case_when(
+    CURRACTIVITY_FULL == "Ja" ~ "Полная занятость",
+    CURRACTIVITY_PART == "Ja" ~ "Частичная занятость",
+    CURRACTIVITY_MULTI == "Ja" ~ "Несколько работ",
+    TRUE ~ "Нет занятости"
+  )) %>%
+  group_by(HIGHESTCOMPLEDUAGGI, employment_type) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+ggplot(employment_type_data, aes(x = HIGHESTCOMPLEDUAGGI, y = percentage, fill = employment_type)) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(
+    title = "Распределение типов занятости по уровням образования",
+    x = "Уровень образования",
+    y = "Процент",
+    fill = "Тип занятости"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+student_data <- decoded_data %>%
+  filter(!is.na(HIGHESTCOMPLEDUAGGI)) %>%
+  group_by(HIGHESTCOMPLEDUAGGI) %>%
+  summarise(
+    total = n(),
+    students = sum(CURRACTIVITY_STUDENT == "Ja", na.rm = TRUE),
+    student_rate = (students / total) * 100
+  )
+
+ggplot(student_data, aes(x = student_rate, y = reorder(HIGHESTCOMPLEDUAGGI, student_rate))) +
+  geom_point(size = 3, color = "darkgreen") +
+  labs(
+    title = "Уровень образования и процент студентов",
+    x = "Процент студентов",
+    y = "Уровень образования"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+ggplot(decoded_data %>% filter(!is.na(HIGHESTCOMPLEDUAGGI), CURRACTIVITY_FULL == "Ja"), 
+       aes(x = HIGHESTCOMPLEDUAGGI)) +
+  geom_density(aes(fill = HIGHESTCOMPLEDUAGGI), alpha = 0.5) +
+  labs(
+    title = "Плотность полной занятости по уровням образования",
+    x = "Уровень образования",
+    y = "Плотность"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+employment_count <- decoded_data %>%
+  filter(!is.na(HIGHESTCOMPLEDUAGGI)) %>%
+  mutate(employment_status = case_when(
+    CURRACTIVITY_FULL == "Ja" ~ "Полная занятость",
+    CURRACTIVITY_PART == "Ja" ~ "Частичная занятость",
+    CURRACTIVITY_DISOCC == "Ja" ~ "Безработные",
+    TRUE ~ "Другие"
+  ))
+
+ggplot(employment_count, aes(x = HIGHESTCOMPLEDUAGGI, fill = employment_status)) +
+  geom_bar(position = "dodge") +
+  labs(
+    title = "Распределение типов занятости по уровням образования",
+    x = "Уровень образования",
+    y = "Количество людей",
+    fill = "Тип занятости"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
