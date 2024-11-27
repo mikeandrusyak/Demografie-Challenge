@@ -20,7 +20,7 @@ summary(hh_merged_data)
 summary(hhm_merged_data)
 ```
 ```{r}
-selected_data <- zp_merged_data %>% select(HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
+selected_data <- zp_merged_data %>% select(AGE, HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
@@ -28,8 +28,60 @@ selected_data <- zp_merged_data %>% select(HOUSEHOLDYEARLYID, NATIONALITYAGG, NA
 ```
 
 ```{r}
+# Empty dataframe to store results
+results <- data.frame(
+  Count_unique = integer(),
+  Total = integer(),
+  Year = integer()
+)
+
+# Loop through years
+for (year in 2010:2021) {
+  # Count unique rows for the current year
+  count_unique <- selected_data %>%
+    select(HOUSEHOLDYEARLYID, YEAR_QUIZ) %>%
+    filter(YEAR_QUIZ == year) %>%
+    distinct() %>%
+    count()
+  
+  # Count all rows for the current year
+  total <- selected_data %>%
+    select(HOUSEHOLDYEARLYID, YEAR_QUIZ) %>%
+    filter(YEAR_QUIZ == year) %>%
+    count()
+  
+  # Add results to the results dataframe
+  results <- rbind(
+    results,
+    data.frame(
+      Count_unique = count_unique$n,  # Extract value from count()
+      Total = total$n,                # Extract value from count()
+      Year = year
+    )
+  )
+}
+
+# Display the results table
+print(results)
+```
+```{r}
 summary(selected_data)
 ```
+```{r}
+selected_data <- selected_data %>% mutate(
+  AGE_GROUP = case_when(AGE < 18 ~ "<18",
+                        AGE >= 18 & AGE <= 30 ~ "19-30",
+                        AGE >= 31 & AGE <= 40 ~ "31-40",
+                        AGE >= 41 & AGE < 50 ~ "41-50",
+                        AGE >= 51 ~ "51+"),
+)
+```
+
+```{r}
+head(selected_data %>%  select(AGE, AGE_GROUP))
+```
+
+
 ```{r}
 decode <- function(df, var, decode_mapping) {
   # Перетворюємо ключі у списку на текст
@@ -92,6 +144,49 @@ selected_data <- decode(selected_data, NATIONALITYCAT, list(
 ```
 
 ```{r}
+selected_data <- selected_data %>%
+  mutate(
+    WORKSTATUS_DETAIL = if_else(
+      YEAR_QUIZ > 2014 & WORKSTATUS_DETAIL %in% c(121, 122),
+      case_match(WORKSTATUS_DETAIL, 121 ~ 111, 122 ~ 112),  
+      WORKSTATUS_DETAIL                                   
+    )
+  )
+```
+
+
+```{r}
+selected_data <- decode(selected_data, WORKSTATUS_DETAIL, list(
+  "111" = "Selbständige mit Angestellten",
+  "112" = "Selbständige ohne Angestellte",
+  "113" = "Mitarbeitende Familienmitglieder",
+  "121" = "Arbeitnehmer in Unternehmensleitung",
+  "131" = "Arbeitnehmer in Unternehmensleitung",
+  "124" = "Arbeitnehmer im mittleren und unteren Kader",
+  "134" = "Arbeitnehmer im mittleren und unteren Kader",
+  "125" = "Arbeitnehmer ohne Vorgesetztenfunktion",
+  "135" = "Arbeitnehmer ohne Vorgesetztenfunktion",
+  "126" = "Arbeitnehmer in geschützter Werkstatt",
+  "136" = "Arbeitnehmer in geschützter Werkstatt",
+  "127" = "Lernende in der dualen beruflichen Grundbildung",
+  "137" = "Lernende in der dualen beruflichen Grundbildung",
+  "128" = "Arbeitnehmer ohne weitere Angaben",
+  "130" = "Erwerbstätige ohne weitere Angaben",
+  "200" = "Erwerbslose",
+  "301" = "Nichterwerbspersonen in Ausbildung",
+  "302" = "Nichterwerbspersonen mit freiwilliger Tätigkeit",
+  "303" = "Hausfrauen/Hausmänner",
+  "304" = "Rentner, Pensionierte",
+  "305" = "Invalide oder teilinvalide Nichterwerbspersonen",
+  "306" = "Übrige Nichterwerbspersonen",
+  "-9" = NA
+  
+)
+)
+```
+
+
+```{r}
 head(selected_data)
 ```
 ```{r}
@@ -117,60 +212,51 @@ box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
 box_plot(selected_data, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM)
 ```
 ```{r}
-for (year in 2010:2021){
-    chart <- selected_data %>% 
-      filter(YEAR_QUIZ == year & !is.na(CURROCCUPATIONISCOAGG)) %>% 
-      mutate(CURROCCUPATIONISCOAGG = factor(CURROCCUPATIONISCOAGG, levels = c(
-         "Führungskräfte", "Akademische Berufe", 
-         "Techniker und gleichrangige Berufe", 
-         "Bürokräfte und verwandte Berufe",
-         "Dienstleistungsberufe und Verkäufer",
-         "Fachkräfte in Land- und Forstwirtschaft",
-         "Handwerks- und verwandte Berufe",
-         "Anlagen und Maschinenbediener, Montierer",
-         "Hilfsarbeitskräfte",
-         "Angehörige der regulären Streitkräfte",
-         NA))) %>% 
-      ggplot(aes(x=CURROCCUPATIONISCOAGG, fill = NATIONALITYCAT))+
-      geom_bar(position = "fill", na.rm = TRUE)+
-      geom_text(
-        aes(label = scales::percent(after_stat(count) / 
-                                      tapply(after_stat(count), after_stat(x), sum)[after_stat(x)])),
-        stat = "count",
-        position = position_fill(vjust = 0.5),
-        size = 3
-      ) +
-      labs(title = paste("Year:", year), x = "Occupation", y = "Proportion") +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
-        axis.text.y = element_text(size = 10),                       
-        legend.text = element_text(size = 10),                    
-        plot.margin = margin(10, 20, 10, 10)  
-      )
-  print(chart)
+generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
+  unique_occupations <- unique(data %>% pull({{ occupation_column }}))
+  
+  for (occupation in unique_occupations) {
+    if (!is.na(occupation)) {
+      chart <- data %>% 
+        filter({{ occupation_column }} == occupation & 
+                 !is.na(YEAR_QUIZ) & 
+                 !is.na({{ nationality_column }})) %>% 
+        mutate(YEAR_QUIZ = factor(YEAR_QUIZ, levels = sort(unique(YEAR_QUIZ)))) %>% 
+        ggplot(aes(x = YEAR_QUIZ, fill = {{ nationality_column }})) +
+        geom_bar(position = "fill", na.rm = TRUE) +
+        geom_text(
+          aes(label = scales::percent(
+            round(after_stat(count) / tapply(after_stat(count), 
+                                             after_stat(x), sum)[after_stat(x)], 2))),
+          stat = "count",
+          position = position_fill(vjust = 0.5),
+          size = 3
+        ) +
+        labs(
+          title = paste("Occupation:", occupation),
+          x = "Year",
+          y = "Proportion"
+        ) +
+        theme(
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+          axis.text.y = element_text(size = 10),
+          legend.text = element_text(size = 10),
+          plot.margin = margin(10, 20, 10, 10)
+        )
+      
+      print(chart)
+    }
+  }
 }
 ```
 
+```{r}
+generate_charts_by_occupation(selected_data, CURROCCUPATIONISCOAGG, NATIONALITYCAT)
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+generate_charts_by_occupation(selected_data, WORKSTATUS_DETAIL, NATIONALITYCAT)
+```
 
 
 
