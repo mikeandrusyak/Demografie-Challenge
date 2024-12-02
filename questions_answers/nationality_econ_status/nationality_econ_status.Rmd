@@ -129,7 +129,9 @@ selected_data <- decode(selected_data, NATIONALITYCONTI, list(
     "6" = "Nordamerika",
     "7" = "Lateinamerika und Karibik",
     "8" = "Asien",
-    "9" = "Ozeanien"
+    "9" = "Ozeanien",
+    "-1" = "Staatenlos",
+    "-9" = NA
   )
 )
 ```
@@ -255,6 +257,16 @@ work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
 ```
 
 ```{r}
+work_time_by_two_categories(selected_data, NATIONALITYCONTI, HIGHESTCOMPLEDUAGGII, c("No school / 1-7 years", 
+                           "8-9 years of school / Bridge program",
+                           "Vocational training / Vocational school",
+                           "General education / Matura",
+                           "Higher vocational education / Technical school",
+                           "University / Higher education"))
+```
+
+
+```{r}
 work_time_by_two_categories(selected_data, NATIONALITYCAT, HIGHESTCOMPLEDUAGGII, c("No school / 1-7 years", 
                            "8-9 years of school / Bridge program",
                            "Vocational training / Vocational school",
@@ -266,41 +278,6 @@ work_time_by_two_categories(selected_data, NATIONALITYCAT, HIGHESTCOMPLEDUAGGII,
 ```{r}
 work_time_by_two_categories(selected_data, NATIONALITYCAT, CURROCCUPATIONISCOAGG)
 ```
-
-
-```{r}
-for (year in 2010:2021){
-  chart <- selected_data %>% 
-    filter(YEAR_QUIZ == year) %>% 
-    filter(!is.na(HIGHESTCOMPLEDUAGGII) & TIMEWORKEDPERWEEKSUM > 0 
-           & !is.na(NATIONALITYCAT)) %>% 
-    group_by(NATIONALITYCAT, HIGHESTCOMPLEDUAGGII) %>%
-    mutate(HIGHESTCOMPLEDUAGGII = 
-             factor(HIGHESTCOMPLEDUAGGII,
-                    levels = c("No school / 1-7 years", 
-                           "8-9 years of school / Bridge program",
-                           "Vocational training / Vocational school",
-                           "General education / Matura",
-                           "Higher vocational education / Technical school",
-                           "University / Higher education"))) %>% 
-    summarise(average_time_worked = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>%
-    ggplot(aes(x=HIGHESTCOMPLEDUAGGII, y = average_time_worked, fill=NATIONALITYCAT))+
-    geom_bar(stat = "identity", position = "dodge")+
-    geom_text(aes(label = round(average_time_worked, 1)),
-              position = position_dodge(width = 0.9),     # Вирівнювання тексту для груп
-              vjust = 2,
-              size = 3) +
-    theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
-      axis.text.y = element_text(size = 10),                       
-      legend.text = element_text(size = 10),                    
-      plot.margin = margin(10, 20, 10, 10)  
-    )
-  print(chart)
-}
-```
-
-
 
 ```{r}
 generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
