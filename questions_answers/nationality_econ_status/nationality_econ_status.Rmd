@@ -20,7 +20,7 @@ summary(hh_merged_data)
 summary(hhm_merged_data)
 ```
 ```{r}
-selected_data <- zp_merged_data %>% select(AGE, HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
+selected_data <- zp_merged_data %>% select(HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGII, AGE, HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
@@ -70,7 +70,7 @@ summary(selected_data)
 ```{r}
 selected_data <- selected_data %>% mutate(
   AGE_GROUP = case_when(AGE < 18 ~ "<18",
-                        AGE >= 18 & AGE <= 30 ~ "19-30",
+                        AGE >= 18 & AGE <= 30 ~ "18-30",
                         AGE >= 31 & AGE <= 40 ~ "31-40",
                         AGE >= 41 & AGE < 50 ~ "41-50",
                         AGE >= 51 ~ "51+"),
@@ -154,6 +154,19 @@ selected_data <- selected_data %>%
   )
 ```
 
+```{r}
+selected_data <- decode(selected_data, HIGHESTCOMPLEDUAGGII, list(
+    "1" = "No school / 1-7 years",
+    "2" = "8-9 years of school / Bridge program",
+    "3" = "Vocational training / Vocational school",
+    "4" = "General education / Matura",
+    "5" = "Higher vocational education / Technical school",
+    "6" = "University / Higher education",
+    "-9" = NA
+  )
+)
+```
+
 
 ```{r}
 selected_data <- decode(selected_data, WORKSTATUS_DETAIL, list(
@@ -211,6 +224,40 @@ box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
 ```{r}
 box_plot(selected_data, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM)
 ```
+```{r}
+for (year in 2010:2021){
+  chart <- selected_data %>% 
+    filter(YEAR_QUIZ == year) %>% 
+    filter(!is.na(HIGHESTCOMPLEDUAGGII) & TIMEWORKEDPERWEEKSUM > 0 
+           & !is.na(NATIONALITYCAT)) %>% 
+    group_by(NATIONALITYCAT, HIGHESTCOMPLEDUAGGII) %>%
+    mutate(HIGHESTCOMPLEDUAGGII = 
+             factor(HIGHESTCOMPLEDUAGGII,
+                    levels = c("No school / 1-7 years", 
+                           "8-9 years of school / Bridge program",
+                           "Vocational training / Vocational school",
+                           "General education / Matura",
+                           "Higher vocational education / Technical school",
+                           "University / Higher education"))) %>% 
+    summarise(average_time_worked = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>%
+    ggplot(aes(x=HIGHESTCOMPLEDUAGGII, y = average_time_worked, fill=NATIONALITYCAT))+
+    geom_bar(stat = "identity", position = "dodge")+
+    geom_text(aes(label = round(average_time_worked, 1)),
+              position = position_dodge(width = 0.9),     # Вирівнювання тексту для груп
+              vjust = 2,
+              size = 3) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
+      axis.text.y = element_text(size = 10),                       
+      legend.text = element_text(size = 10),                    
+      plot.margin = margin(10, 20, 10, 10)  
+    )
+  print(chart)
+}
+```
+
+
+
 ```{r}
 generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
   unique_occupations <- unique(data %>% pull({{ occupation_column }}))
