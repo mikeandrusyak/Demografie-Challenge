@@ -6,45 +6,35 @@ library(ggplot2)
 
 
 ```{r}
-zp_merged_data <- read.csv("zp_merged_data.csv")
-hh_merged_data <- read.csv("hh_merged_data.csv")
-hhm_merged_data <- read.csv("hhm_merged_data.csv")
+data <- read.csv("variables_zp.rds")
 ```
 
 
 ```{r}
 #26 variables
-selected_data_zp <- zp_merged_data
-selected_data_hh <- select(hh_merged_data)
-selected_data_hhm <- select(hhm_merged_data)
-
-
-
-summary(selected_data)
+selected_data <- data
+head(selected_data)
 ```
 
 
 
 ```{r}
 
-decoded_data <- selected_data
 edu_decode_Ja <- function(df, column_name) {
   df %>%
     mutate(!!sym(column_name) := case_when(
       !!sym(column_name) == 0 ~ "Nein",
       !!sym(column_name) == 1 ~ "Ja",
-      TRUE ~ as.character(!!sym(column_name))
+      TRUE ~ as.numeric(!!sym(column_name))
     ))
 }
-columns_to_decode <- c("COMPLETEDEDU10", "COMPLETEDEDU11", "COMPLETEDEDU12", 
-                       "COMPLETEDEDU13", "COMPLETEDEDU2", "COMPLETEDEDU3", 
-                       "COMPLETEDEDU4", "COMPLETEDEDU5", "COMPLETEDEDU6", 
-                       "COMPLETEDEDU7", "COMPLETEDEDU8", "COMPLETEDEDU9", 
-                       "CURRACTIVITY_FULL", "CURRACTIVITY_PART", 
-                       "CURRACTIVITY_MULTI", "CURRACTIVITY_DISOCC", 
-                       "CURRACTIVITY_STUDENT", "CURRACTIVITY_HOME", 
-                       "IN_EDUCATION")
 
+
+columns_to_decode <- c(
+                       "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
+                       "CURRACTIVITY_HOME","IN_EDUCATION")
+
+decoded_data <- data
 for (col in columns_to_decode) {
   decoded_data <- edu_decode_Ja(decoded_data, col)
 }
@@ -54,31 +44,17 @@ for (col in columns_to_decode) {
 
 
 ```{r}
-
 decoded_data <- decoded_data %>%
   mutate(
-    CURRACTIVITYSTATUSI = case_when(
-      CURRACTIVITYSTATUSI == 1 ~ "Erwerbstätige",
-      CURRACTIVITYSTATUSI == 2 ~ "Erwerbslose",
-      CURRACTIVITYSTATUSI == 3 ~ "Nichterwerbspersonen",
-      TRUE ~ as.character(CURRACTIVITYSTATUSI)
-    ),
-    CURRACTIVITYSTATUSII = case_when(
-      CURRACTIVITYSTATUSII == 1 ~ "Vollzeiterwerbstätige",
-      CURRACTIVITYSTATUSII == 2 ~ "Teilzeiterwerbstätige",
-      CURRACTIVITYSTATUSII == 3 ~ "Erwerbslose",
-      CURRACTIVITYSTATUSII == 4 ~ "Nichterwerbspersonen",
-      TRUE ~ as.character(CURRACTIVITYSTATUSII)
-    ),
     CURRACTIVITYSTATUSIII = case_when(
       CURRACTIVITYSTATUSIII == 1 ~ "Vollzeiterwerbstätige (90-100%)",
       CURRACTIVITYSTATUSIII == 2 ~ "Teilzeiterwerbstätige I (70-89%)",
       CURRACTIVITYSTATUSIII == 3 ~ "Teilzeiterwerbstätige II (50-69%)",
-      CURRACTIVITYSTATUSIII == 4 ~ "Teilzeiterwerbstätige III (weniger als 50%)",
+      CURRACTIVITYSTATUSIII == 4 ~ "Teilzeiterwerbstätige III (<50%)",
       CURRACTIVITYSTATUSIII == 5 ~ "Erwerbslose",
-      CURRACTIVITYSTATUSIII == 6 ~ "Nichterwerbspersonen in Ausbildung",
+      CURRACTIVITYSTATUSIII == 6 ~ "In Ausbildung",
       CURRACTIVITYSTATUSIII == 7 ~ "Hausfrauen/Hausmänner",
-      CURRACTIVITYSTATUSIII == 8 ~ "Rentner/innen (AHV, IV)",
+      CURRACTIVITYSTATUSIII == 8 ~ "Rentner/innen",
       CURRACTIVITYSTATUSIII == 9 ~ "Andere Nichterwerbspersonen",
       TRUE ~ as.character(CURRACTIVITYSTATUSIII)
     ),
@@ -88,39 +64,18 @@ decoded_data <- decoded_data %>%
       HIGHESTCOMPLEDUAGGI == 3 ~ "Tertiärstufe",
       TRUE ~ as.character(HIGHESTCOMPLEDUAGGI)
     ),
-    HIGHESTCOMPLEDUAGGII = case_when(
-      HIGHESTCOMPLEDUAGGII == 1 ~ "Keine oder bis 7 Jahre obligatorische Schule",
-      HIGHESTCOMPLEDUAGGII == 2 ~ "Obligatorische Schule (8 oder 9 Jahre), 10. Schuljahr/Vorlehre oder anderes Brückenangebot",
-      HIGHESTCOMPLEDUAGGII == 3 ~ "Berufliche Grundbildung (Anlehre, 2- bis 4-jährige Lehre oder Vollzeitberufsschule, Handelsdiplom, Lehrwerkstätte или ähnliche Ausbildung)",
-      HIGHESTCOMPLEDUAGGII == 4 ~ "Allgemeinbildende Schule (Gymnasiale Maturität, Berufs- oder Fachmaturität, Lehrkräfte-Semинар, Diplom- или Fachmittelschule, Verkehrsschule или ähnliche Ausbildung)",
-      HIGHESTCOMPLEDUAGGII == 5 ~ "Höhere Fach- и Berufsausbildung mit eidg. Fachausweis, Diplom или Meisterdiplom, Technikerschule, höhere Fachschule, HTL, HWV, HFG, HFS или ähnliche Ausbildung",
-      HIGHESTCOMPLEDUAGGII == 6 ~ "Universität, ETH, pädagogische Hochschule, Fachhochschule",
-      TRUE ~ as.character(HIGHESTCOMPLEDUAGGII)
-    ),
-    HIGHESTCOMPLEDUAGGIII = case_when(
-      HIGHESTCOMPLEDUAGGIII == 1 ~ "Ohne nachobligatorische Ausbildung",
-      HIGHESTCOMPLEDUAGGIII == 2 ~ "Sekundarstufe 2: Berufsbildung",
-      HIGHESTCOMPLEDUAGGIII == 3 ~ "Sekundarstufe 2: Allgemeinbildung",
-      HIGHESTCOMPLEDUAGGIII == 4 ~ "Tertiärstufe: Höhere Berufsbildung",
-      HIGHESTCOMPLEDUAGGIII == 5 ~ "Tertiärstufe: Hochschulen",
-      TRUE ~ as.character(HIGHESTCOMPLEDUAGGIII)
-    ),
     HIGHESTCOMPLEDU = case_when(
-      HIGHESTCOMPLEDU == 1 ~ "Keine",
+      HIGHESTCOMPLEDU == 1 ~ "keine",
       HIGHESTCOMPLEDU == 2 ~ "Bis max. 7 Jahre obligatorische Schule",
       HIGHESTCOMPLEDU == 3 ~ "Obligatorische Schule (Real-, Sekundar-, Bezirks-, Orientierungsschule, Pro-, Untergymnasium, Sonderschule)",
       HIGHESTCOMPLEDU == 4 ~ "1-jährige Vorlehre, 1-jährige allgemeinbildende Schule, 10. Schuljahr, 1-jährige Berufswahlschule, Haushaltslehrjahr, Sprachschule (mind. 1 Jahr) mit Schlusszertifikat, Sozialjahr, Brückenangebote oder ähnliche Ausbildung",
-      HIGHESTCOMPLEDU == 5 ~ "2- bis 3-jährige Diplommittelschule, Verkehrsschule, Fachmittelschule FMS или ähnliche Ausbildung",
-      HIGHESTCOMPLEDU == 6 ~ "Berufliche Grundbildung (Anlehre, 2- bis 4-jährige Berufslehre или Vollzeitberufsschule, Handelsдiplом, Lehrwerkstätte или ähnliche Ausbildung)",
-      HIGHESTCOMPLEDU == 7 ~ "Gymnasiale Maturität, Lehrkräfte-Semинар (vorbereitende Ausbildung für Lehrkräfte von Kindergarten, Primarschule, Handarbeit, Hauswirtschaft)",
+      HIGHESTCOMPLEDU == 5 ~ "2- bis 3-jährige Diplommittelschule, Verkehrsschule, Fachmittelschule FMS oder ähnliche Ausbildung",
+      HIGHESTCOMPLEDU == 6 ~ "Berufliche Grundbildung (Anlehre, 2- bis 4-jährige Berufslehre oder Vollzeitberufsschule, Handelsdiplom, Lehrwerkstätte oder ähnliche Ausbildung)",
+      HIGHESTCOMPLEDU == 7 ~ "Gymnasiale Maturität, Lehrkräfte-Seminar (vorbereitende Ausbildung für Lehrkräfte von Kindergarten, Primarschule, Handarbeit, Hauswirtschaft)",
       HIGHESTCOMPLEDU == 8 ~ "Berufs- oder Fachmaturität",
-      HIGHESTCOMPLEDU == 9 ~ "Höhere Fach- und Berufsausbildung mit eidg. Fachausweis, eidg. Diplom или Meisterprüfung, höhere Fachschule für Technik (Technikerschule TS), für Wirtschaft (HKG) или ähnliche höhere Fachschule",
-      HIGHESTCOMPLEDU == 10 ~ "Höhere Fachschule (Vorgänger von Fachhochschulen, z.B. HTL, HWV, HFG, HFS)",
-      HIGHESTCOMPLEDU == 11 ~ "Bachelor (Universität, ETH, Fachhochschule, pädagogische Hochschule)",
-      HIGHESTCOMPLEDU == 12 ~ "Master, Lizentiat, Diplom, Staatsexamen, Nachdiplom (Universität, ETH, Fachhochschule)",
-      HIGHESTCOMPLEDU == 13 ~ "Doktorat, Habilitation",
-      TRUE ~ as.character(HIGHESTCOMPLEDU)
-    )
+      HIGHESTCOMPLEDU == 9 ~ "Höhere Fach- und Berufsausbildung mit eidg. Fachausweis, eidg. Diplom oder Meisterprüfung, höhere Fachschule für Technik (Technikerschule TS), für Wirtschaft (HKG) oder ähnliche höhere Fachschule (2 Jahre Voll- oder 3 Jahre Teilzeitstudium)",
+      HIGHESTCOMPLEDU == 10 ~ "Höhere Fachschule (Vorgänger von Fachhochschulen, z.B. HTL, HWV, HFG, HFS) inkl. Nachdiplome (3 Jahre Voll- oder 4 Jahre Teilzeitstudium)",
+      
   )
 
 ```
