@@ -1,29 +1,47 @@
 ```{r}
 library(dplyr)
+library(readr)
 source("Renaming_Columns.R")
 ```
 
 ```{r}
-# Завантаження змінних з файлів
+# === 1. Загрузка переменных ===
 path_save = "questions_answers/Level_education-current_employment_-Ivan/"
 variables_zp <- readRDS(paste0(path_save,"variables_zp.rds"))
+
+# Убедимся, что переменная variables_zp — это вектор символов
+variables_zp <- unlist(variables_zp)
+
 ```
 
 
 ```{r}
-# Функція для завантаження даних
+# === 2. Функция для загрузки данных из CSV-файла ===
 load_data <- function(year, file_type, variables) {
   file_path <- paste0("data/strukturerhebung/", year, "_SE_RS_CSV/", file_type, year, ".csv")
   
   if (file.exists(file_path)) {
-    if (year == 2011 & file_type == "hhm_"){
+    if (year == 2011 & file_type == "hhm_") {
       data <- read.csv(file_path, sep = ",")
-    }else{
-    data <- read.csv(file_path, sep = ";")
+    } else {
+      data <- read.csv(file_path, sep = ";")
     }
     colnames(data) <- toupper(colnames(data))
     data$YEAR_QUIZ <- year
-    data <- data %>% select(any_of(c(variables, "YEAR_QUIZ")))
+    
+    # Преобразуем variables в вектор символов
+    variables <- as.character(unlist(variables))
+    
+    # Проверяем, что переменные — это символы
+    if (!is.character(variables)) {
+      stop("Ошибка: variables должны быть вектором символов.")
+    }
+    
+    # Фильтруем данные по указанным переменным
+    data <- data %>% select(any_of(c(variables, "CURRACTIVITYSTATUSIII",
+                       "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
+                       "CURRACTIVITY_HOME","IN_EDUCATION",
+                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI")))
     return(data)
   } else {
     message(paste("Файл не знайдено:", file_path))
@@ -34,7 +52,7 @@ load_data <- function(year, file_type, variables) {
 
 ```{r}
 
-# Завантаження даних для всіх років за два типи файлів
+# === 3. Функция для загрузки всех данных за диапазон годов ===
 load_all_data <- function(start_year, end_year, file_type, variables) {
   data_list <- list()
   
@@ -47,6 +65,7 @@ load_all_data <- function(start_year, end_year, file_type, variables) {
   
   return(data_list)
 }
+
 ```
 
 ```{r}
@@ -72,18 +91,14 @@ unify_column_types <- function(data_list) {
 ```
 
 ```{r}
-merging <- function(start_year, end_year, file_type, variables){
-  data_list <- load_all_data(start_year, end_year, 
-                             file_type, variables)
+# === 5. Функция для объединения всех данных за диапазон годов ===
+merging <- function(start_year, end_year, file_type, variables) {
+  data_list <- load_all_data(start_year, end_year, file_type, variables)
   
-  rename_mappings <- list(
-    "SECCITIZ" = "SECCITIZENSHIP",
-    "WORKSTATUSDETAIL" = "WORKSTATUS_DETAIL"
-  )
-  
-  data_list <- rename_columns(data_list, rename_mappings)
-  data_list <- unify_column_types(data_list)
-  
+  # Проверим, что data_list не пуст
+  if (length(data_list) == 0) {
+    stop("Ошибка: Не удалось загрузить данные для указанных годов.")
+  }
   
   merged_data <- data_list[[as.character(start_year)]]
   for (year in (start_year + 1):end_year) {
@@ -92,7 +107,10 @@ merging <- function(start_year, end_year, file_type, variables){
     }
   }
   
-  write.csv(merged_data, paste0("questions_answers/Level_education-current_employment-Ivan", file_type, "merged_data",".csv"), row.names = FALSE)
+  # Сохраняем файл CSV
+  file_path <- paste0("questions_answers/Level_education-current_employment_-Ivan/", file_type, "merged_data.csv")
+  write.csv(merged_data, file_path, row.names = FALSE)
+  message(paste("Файл сохранён по пути:", file_path))
   
   return(merged_data)
 }

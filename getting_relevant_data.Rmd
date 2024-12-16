@@ -55,13 +55,13 @@ variables_zp <- c( "CURRACTIVITYSTATUSIII",
 
 ```{r}
 path_save = "questions_answers/Level_education-current_employment_-Ivan/"
-saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
+
 ```
 
 ```{r}
 # Create an empty data frame to store results with variables as row names
-result_df <- data.frame(matrix(0, nrow = length(variables_list), ncol = length(file_names)),
-                        row.names = variables_list)
+result_df <- data.frame(matrix(0, nrow = length(variables_zp), ncol = length(file_names)),
+                        row.names = variables_zp)
 colnames(result_df) <- file_names
 
 # Check if each variable is found in any sheet of each file
@@ -91,7 +91,7 @@ for (file in file_names) {
 ```{r}
 # Convert the matrix to a DataFrame for convenience
 result_df <- as.data.frame(result_df)
-
+saveRDS(result_df, paste0(path_save,"variables_zp.rds"))
 # Output the result
 print(result_df)
 ```
