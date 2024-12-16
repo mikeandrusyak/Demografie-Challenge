@@ -11,6 +11,106 @@ hhm_merged_data <- read.csv("hhm_merged_data.csv")
 ```
 
 ```{r}
+decode <- function(df, var, decode_mapping) {
+  # Перетворюємо ключі у списку на текст
+  for (key in names(decode_mapping)) {
+    value <- decode_mapping[[key]]
+    df <- df %>%
+      mutate({{ var }} := case_match(
+        as.character({{ var }}),  # Перетворюємо значення змінної на текст
+        key ~ value,              # Зіставляємо ключ зі значенням
+        .default = as.character({{ var }})  # Залишаємо оригінальне значення, якщо немає відповідності
+      ))
+  }
+  return(df)
+}
+```
+
+```{r}
+box_plot <- function(df,cat,value){
+  df %>% 
+    filter({{cat}}>0 & {{value}}> 0) %>% 
+    ggplot(aes(x={{cat}}, y={{value}}, fill = {{cat}}))+
+    geom_boxplot(na.rm = TRUE)+
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
+      axis.text.y = element_text(size = 10),                       
+      legend.text = element_text(size = 10),                    
+      plot.margin = margin(10, 20, 10, 10)  
+  )
+}
+```
+
+```{r}
+work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
+  for (year in 2010:2021){
+    data_filtered <- {{df}} %>% 
+      filter(YEAR_QUIZ == year) %>% 
+      filter(!is.na({{cat1}}) & TIMEWORKEDPERWEEKSUM > 0 
+             & !is.na({{cat2}})) %>% 
+      group_by({{cat1}}, {{cat2}})
+    if (!is.null(sort_levels)) {
+      data_filtered <- data_filtered %>%  mutate({{cat2}} := factor({{cat2}},levels = sort_levels))
+    } 
+    chart <- data_filtered %>% 
+      summarise(average_time_worked = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>%
+      ggplot(aes(x={{cat2}}, y = average_time_worked, fill={{cat1}}))+
+      geom_bar(stat = "identity", position = "dodge")+
+      geom_text(aes(label = round(average_time_worked, 1)),
+                position = position_dodge(width = 0.9), 
+                vjust = 2,
+                size = 3) +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
+        axis.text.y = element_text(size = 10),                       
+        legend.text = element_text(size = 10),                    
+        plot.margin = margin(10, 20, 10, 10)  
+      )
+    print(chart)
+  }
+}
+```
+
+```{r}
+generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
+  unique_occupations <- unique(data %>% pull({{ occupation_column }}))
+  
+  for (occupation in unique_occupations) {
+    if (!is.na(occupation)) {
+      chart <- data %>% 
+        filter({{ occupation_column }} == occupation & 
+                 !is.na(YEAR_QUIZ) & 
+                 !is.na({{ nationality_column }})) %>% 
+        mutate(YEAR_QUIZ = factor(YEAR_QUIZ, levels = sort(unique(YEAR_QUIZ)))) %>% 
+        ggplot(aes(x = YEAR_QUIZ, fill = {{ nationality_column }})) +
+        geom_bar(position = "fill", na.rm = TRUE) +
+        geom_text(
+          aes(label = scales::percent(
+            round(after_stat(count) / tapply(after_stat(count), 
+                                             after_stat(x), sum)[after_stat(x)], 2))),
+          stat = "count",
+          position = position_fill(vjust = 0.5),
+          size = 3
+        ) +
+        labs(
+          title = paste("Occupation:", occupation),
+          x = "Year",
+          y = "Proportion"
+        ) +
+        theme(
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+          axis.text.y = element_text(size = 10),
+          legend.text = element_text(size = 10),
+          plot.margin = margin(10, 20, 10, 10)
+        )
+      
+      print(chart)
+    }
+  }
+}
+```
+
+```{r}
 summary(zp_merged_data)
 ```
 ```{r}
@@ -20,11 +120,12 @@ summary(hh_merged_data)
 summary(hhm_merged_data)
 ```
 ```{r}
-selected_data <- zp_merged_data %>% select(HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGII, AGE, HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
+selected_data <- zp_merged_data %>% select(HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGII, AGE,
+                                           HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
-                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG)
+                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG,RESIDENTPERMIT)
 ```
 
 ```{r}
@@ -80,22 +181,44 @@ selected_data <- selected_data %>% mutate(
 ```{r}
 head(selected_data %>%  select(AGE, AGE_GROUP))
 ```
+```{r}
+selected_data <- decode(selected_data, TIMEWORKEDPERWEEKSUM, list(
+    "-9" = NA,
+    "-8" = NA,
+    "-7" = NA
+  )
+)
+selected_data$TIMEWORKEDPERWEEKSUM <- as.numeric(as.character(selected_data$TIMEWORKEDPERWEEKSUM))
+```
 
 
 ```{r}
-decode <- function(df, var, decode_mapping) {
-  # Перетворюємо ключі у списку на текст
-  for (key in names(decode_mapping)) {
-    value <- decode_mapping[[key]]
-    df <- df %>%
-      mutate({{ var }} := case_match(
-        as.character({{ var }}),  # Перетворюємо значення змінної на текст
-        key ~ value,              # Зіставляємо ключ зі значенням
-        .default = as.character({{ var }})  # Залишаємо оригінальне значення, якщо немає відповідності
-      ))
-  }
-  return(df)
-}
+selected_data$TIMEWORKEDPERWEEKSUM %>% unique()
+```
+
+
+```{r}
+mean_age <- mean(selected_data$TIMEWORKEDPERWEEKSUM)
+median_age <- median(selected_data$TIMEWORKEDPERWEEKSUM)
+
+selected_data %>% filter(!is.na(TIMEWORKEDPERWEEKSUM)) %>% 
+  ggplot(aes(x = TIMEWORKEDPERWEEKSUM)) +
+    geom_density(fill = "skyblue", alpha = 0.5) +  # Щільність розподілу
+    labs(title = "Work time per week", x = "time", y = "density") +
+    theme_minimal(base_size = 14)
+```
+
+
+```{r}
+selected_data <- selected_data %>% mutate(
+  WORK_TIME_GROUP = case_when(TIMEWORKEDPERWEEKSUM < 20 ~ "<50%",
+                        TIMEWORKEDPERWEEKSUM >= 21 & TIMEWORKEDPERWEEKSUM <= 27 ~ "50-70%",
+                        TIMEWORKEDPERWEEKSUM >= 29 & TIMEWORKEDPERWEEKSUM <= 36 ~ "70-90%",
+                        TIMEWORKEDPERWEEKSUM >= 37 & TIMEWORKEDPERWEEKSUM <= 40 ~ "90-100%",
+                        TIMEWORKEDPERWEEKSUM >= 41 & TIMEWORKEDPERWEEKSUM <= 44 ~ "100-110%",
+                        TIMEWORKEDPERWEEKSUM >= 45 & TIMEWORKEDPERWEEKSUM <= 48 ~ "110-120%",
+                        TIMEWORKEDPERWEEKSUM >= 49 ~ ">120%"),
+)
 ```
 
 ```{r}
@@ -204,20 +327,7 @@ selected_data <- decode(selected_data, WORKSTATUS_DETAIL, list(
 ```{r}
 head(selected_data)
 ```
-```{r}
-box_plot <- function(df,cat,value){
-  df %>% 
-    filter({{cat}}>0 & {{value}}> 0) %>% 
-    ggplot(aes(x={{cat}}, y={{value}}, fill = {{cat}}))+
-    geom_boxplot(na.rm = TRUE)+
-    theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
-      axis.text.y = element_text(size = 10),                       
-      legend.text = element_text(size = 10),                    
-      plot.margin = margin(10, 20, 10, 10)  
-  )
-}
-```
+
 
 
 ```{r}
@@ -226,35 +336,7 @@ box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
 ```{r}
 box_plot(selected_data, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM)
 ```
-```{r}
-work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
-  for (year in 2010:2021){
-    data_filtered <- {{df}} %>% 
-      filter(YEAR_QUIZ == year) %>% 
-      filter(!is.na({{cat1}}) & TIMEWORKEDPERWEEKSUM > 0 
-             & !is.na({{cat2}})) %>% 
-      group_by({{cat1}}, {{cat2}})
-    if (!is.null(sort_levels)) {
-      data_filtered <- data_filtered %>%  mutate({{cat2}} := factor({{cat2}},levels = sort_levels))
-    } 
-    chart <- data_filtered %>% 
-      summarise(average_time_worked = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>%
-      ggplot(aes(x={{cat2}}, y = average_time_worked, fill={{cat1}}))+
-      geom_bar(stat = "identity", position = "dodge")+
-      geom_text(aes(label = round(average_time_worked, 1)),
-                position = position_dodge(width = 0.9),     # Вирівнювання тексту для груп
-                vjust = 2,
-                size = 3) +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
-        axis.text.y = element_text(size = 10),                       
-        legend.text = element_text(size = 10),                    
-        plot.margin = margin(10, 20, 10, 10)  
-      )
-    print(chart)
-  }
-}
-```
+
 
 ```{r}
 work_time_by_two_categories(selected_data, NATIONALITYCONTI, HIGHESTCOMPLEDUAGGII, c("No school / 1-7 years", 
@@ -279,44 +361,7 @@ work_time_by_two_categories(selected_data, NATIONALITYCAT, HIGHESTCOMPLEDUAGGII,
 work_time_by_two_categories(selected_data, NATIONALITYCAT, CURROCCUPATIONISCOAGG)
 ```
 
-```{r}
-generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
-  unique_occupations <- unique(data %>% pull({{ occupation_column }}))
-  
-  for (occupation in unique_occupations) {
-    if (!is.na(occupation)) {
-      chart <- data %>% 
-        filter({{ occupation_column }} == occupation & 
-                 !is.na(YEAR_QUIZ) & 
-                 !is.na({{ nationality_column }})) %>% 
-        mutate(YEAR_QUIZ = factor(YEAR_QUIZ, levels = sort(unique(YEAR_QUIZ)))) %>% 
-        ggplot(aes(x = YEAR_QUIZ, fill = {{ nationality_column }})) +
-        geom_bar(position = "fill", na.rm = TRUE) +
-        geom_text(
-          aes(label = scales::percent(
-            round(after_stat(count) / tapply(after_stat(count), 
-                                             after_stat(x), sum)[after_stat(x)], 2))),
-          stat = "count",
-          position = position_fill(vjust = 0.5),
-          size = 3
-        ) +
-        labs(
-          title = paste("Occupation:", occupation),
-          x = "Year",
-          y = "Proportion"
-        ) +
-        theme(
-          axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-          axis.text.y = element_text(size = 10),
-          legend.text = element_text(size = 10),
-          plot.margin = margin(10, 20, 10, 10)
-        )
-      
-      print(chart)
-    }
-  }
-}
-```
+
 
 ```{r}
 generate_charts_by_occupation(selected_data, CURROCCUPATIONISCOAGG, NATIONALITYCAT)
