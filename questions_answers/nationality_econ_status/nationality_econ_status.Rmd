@@ -1,4 +1,4 @@
-```{r}
+```{r, message=FALSE}
 library(dplyr)
 library(ggplot2)
 library(purrr)
@@ -73,39 +73,35 @@ work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
 
 ```{r}
 generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
-  unique_occupations <- unique(data %>% pull({{ occupation_column }}))
-  
-  for (occupation in unique_occupations) {
-    if (!is.na(occupation)) {
-      chart <- data %>% 
-        filter({{ occupation_column }} == occupation & 
-                 !is.na(YEAR_QUIZ) & 
-                 !is.na({{ nationality_column }})) %>% 
-        mutate(YEAR_QUIZ = factor(YEAR_QUIZ, levels = sort(unique(YEAR_QUIZ)))) %>% 
-        ggplot(aes(x = YEAR_QUIZ, fill = {{ nationality_column }})) +
-        geom_bar(position = "fill", na.rm = TRUE) +
-        geom_text(
-          aes(label = scales::percent(
-            round(after_stat(count) / tapply(after_stat(count), 
-                                             after_stat(x), sum)[after_stat(x)], 2))),
-          stat = "count",
-          position = position_fill(vjust = 0.5),
-          size = 3
-        ) +
-        labs(
-          title = paste("Occupation:", occupation),
-          x = "Year",
-          y = "Proportion"
-        ) +
-        theme(
-          axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-          axis.text.y = element_text(size = 10),
-          legend.text = element_text(size = 10),
-          plot.margin = margin(10, 20, 10, 10)
-        )
-      
-      print(chart)
-    }
+
+  for (year in 2010:2021) {
+    chart <- data %>% 
+      filter(YEAR_QUIZ == year & 
+               !is.na({{ occupation_column }}) & 
+               !is.na({{ nationality_column }})) %>% 
+      ggplot(aes(x = {{ occupation_column }}, fill = {{ nationality_column }})) +
+      geom_bar(position = "fill", na.rm = TRUE) +
+      geom_text(
+        aes(label = scales::percent(
+          round(after_stat(count) / tapply(after_stat(count), 
+                                           after_stat(x), sum)[after_stat(x)], 2))),
+        stat = "count",
+        position = position_fill(vjust = 0.5),
+        size = 3
+      ) +
+      labs(
+        title = paste("Year:", year),
+        x = "Occupation",
+        y = "Proportion"
+      ) +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.text.y = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        plot.margin = margin(10, 20, 10, 10)
+      )
+    
+    print(chart)
   }
 }
 ```
@@ -125,7 +121,7 @@ selected_data <- zp_merged_data %>% select(HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGII
                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
-                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG,RESIDENTPERMIT)
+                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG)
 ```
 
 ```{r}
@@ -168,6 +164,61 @@ print(results)
 ```{r}
 summary(selected_data)
 ```
+```{r}
+# Завантаження бібліотек
+library(ggplot2)
+library(reshape2)
+
+# Обробка даних: вибір лише числових колонок
+numeric_data <- zp_merged_data[sapply(zp_merged_data, is.numeric)]
+# Обчислення кореляційної матриці
+numeric_data[is.na(numeric_data)] <- 0
+correlation_matrix <- cor(numeric_data)
+
+# Перетворення матриці в довгий формат для ggplot2
+correlation_long <- melt(correlation_matrix)
+
+# Побудова теплової карти
+heatmap_plot <- ggplot(data = correlation_long, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 3) + # Додавання значень кореляції
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) + # Вибір кольорової гами
+  theme_minimal() +
+  labs(title = "Correlation Heatmap",
+       x = "Variables",
+       y = "Variables",
+       fill = "Correlation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Відображення графіка
+print(heatmap_plot)
+```
+```{r}
+# Обчислення кореляційної матриці
+correlation_matrix <- cor(numeric_data, use = "complete.obs")
+
+# Вибір кореляцій для TIMEWORKEDPERWEEKSUM
+timeworked_correlations <- correlation_matrix["TIMEWORKEDPERWEEKSUM", ]
+
+# Видалення самої змінної TIMEWORKEDPERWEEKSUM (кореляція з собою завжди 1)
+timeworked_correlations <- timeworked_correlations[names(timeworked_correlations) != "TIMEWORKEDPERWEEKSUM"]
+
+# Сортування за значеннями кореляції
+sorted_correlations <- sort(timeworked_correlations, decreasing = TRUE)
+
+# Отримання топ-5 позитивних і негативних кореляцій
+top_5_positive <- head(sorted_correlations, 10)
+top_5_negative <- tail(sorted_correlations, 10)
+
+# Вивід результатів
+print("Топ-5 позитивних кореляцій:")
+print(top_5_positive)
+
+print("Топ-5 негативних кореляцій:")
+print(top_5_negative)
+```
+
+
 ```{r}
 selected_data <- selected_data %>% mutate(
   AGE_GROUP = case_when(AGE < 18 ~ "<18",
@@ -292,6 +343,29 @@ selected_data <- decode(selected_data, HIGHESTCOMPLEDUAGGII, list(
 )
 ```
 
+```{r}
+selected_data <- decode(selected_data, RESIDENTPERMIT, list(
+    "1" = "A",
+    "2" = "B",
+    "3" = "C",
+    "4" = "Ci",
+    "5" = "F",
+    "6" = "G",
+    "7" = "L",
+    "8" = "N",
+    "9" = "S",
+    "10" = "Meldepflichtige",
+    "11" = "Funktionär",
+    "12" = "Funktionär",
+    "13" = NA,
+    "-2" = "Schweiz",
+    "-6" = NA,
+    "-8" = NA,
+    "-9" = NA
+  )
+)
+```
+
 
 ```{r}
 selected_data <- decode(selected_data, WORKSTATUS_DETAIL, list(
@@ -336,6 +410,19 @@ box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
 ```{r}
 box_plot(selected_data, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM)
 ```
+```{r}
+work_time_by_two_categories(selected_data, NATIONALITYCAT, CURROCCUPATIONISCOAGG)
+```
+
+```{r}
+generate_charts_by_occupation(selected_data, CURROCCUPATIONISCOAGG, NATIONALITYCAT)
+```
+```{r}
+without_swiss <- selected_data %>% 
+  filter(RESIDENTPERMIT != "Schweiz")
+generate_charts_by_occupation(without_swiss, CURROCCUPATIONISCOAGG, RESIDENTPERMIT)
+```
+
 
 
 ```{r}
@@ -359,6 +446,10 @@ work_time_by_two_categories(selected_data, NATIONALITYCAT, HIGHESTCOMPLEDUAGGII,
 
 ```{r}
 work_time_by_two_categories(selected_data, NATIONALITYCAT, CURROCCUPATIONISCOAGG)
+```
+```{r}
+work_time_by_two_categories(selected_data, RESIDENTPERMIT, CURROCCUPATIONISCOAGG)
+
 ```
 
 
