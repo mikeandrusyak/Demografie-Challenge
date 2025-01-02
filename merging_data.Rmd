@@ -109,7 +109,7 @@ zp_data_list <- merging(2010, 2021, "zp_", c("HOUSEHOLDYEARLYID", variables_zp))
 
 
 ```{r}
-# hh_data_list <- merging(2010, 2021, "hh_", c("HOUSEHOLDYEARLYID", variables_hh))
+hh_data_list <- merging(2010, 2021, "hh_", c("HOUSEHOLDYEARLYID", variables_hh))
 ```
 
 ```{r}

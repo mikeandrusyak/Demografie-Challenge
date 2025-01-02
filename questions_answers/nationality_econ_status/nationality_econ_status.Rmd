@@ -80,7 +80,7 @@ generate_charts_by_occupation <- function(data, occupation_column, nationality_c
                !is.na({{ occupation_column }}) & 
                !is.na({{ nationality_column }})) %>% 
       ggplot(aes(x = {{ occupation_column }}, fill = {{ nationality_column }})) +
-      geom_bar(position = "fill", na.rm = TRUE) +
+      geom_bar(position = "stack", na.rm = TRUE) +
       geom_text(
         aes(label = scales::percent(
           round(after_stat(count) / tapply(after_stat(count), 
@@ -115,13 +115,14 @@ summary(hh_merged_data)
 ```{r}
 summary(hhm_merged_data)
 ```
+
 ```{r}
 selected_data <- zp_merged_data %>% select(HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGII, AGE,
                                            HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT, 
                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
-                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG)
+                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG,MAINLANGUAGEIIIAGG,MAINLANGUAGEIIIAGG,MAINLANGUAGEIIIAGG)
 ```
 
 ```{r}
@@ -242,6 +243,10 @@ selected_data <- decode(selected_data, TIMEWORKEDPERWEEKSUM, list(
 selected_data$TIMEWORKEDPERWEEKSUM <- as.numeric(as.character(selected_data$TIMEWORKEDPERWEEKSUM))
 ```
 
+```{r}
+selected_data %>% filter(TIMEWORKEDPERWEEKSUM >50 | TIMEWORKEDPERWEEKSUM < 20) %>% select(AGE, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM,CURROCCUPATIONISCOAGG, knows_official_language)
+```
+
 
 ```{r}
 selected_data$TIMEWORKEDPERWEEKSUM %>% unique()
@@ -290,6 +295,29 @@ selected_data <- decode(selected_data, CURROCCUPATIONISCOAGG, list(
   )
 )
   
+```
+
+```{r}
+main_languages <- list(
+  "1" = "Deutsch (oder Schweizerdeutsch)",
+  "2" = "Französisch (oder Patois Romand)",
+  "3" = "Italienisch (oder Tessiner/Bündner-italienischer Dialekt)",
+  "4" = "Rätoromanisch",
+  "5" = "Serbisch/Kroatisch",
+  "6" = "Albanisch",
+  "7" = "Portugiesisch",
+  "8" = "Spanisch",
+  "9" = "Englisch",
+  "10" = "Türkisch",
+  "11" = "Tamil",
+  "12" = "Arabisch",
+  "13" = "Niederländisch",
+  "14" = "Andere Sprache/n"
+)
+
+selected_data <- decode(selected_data, MAINLANGUAGEIAGG, main_languages)
+selected_data <- decode(selected_data, MAINLANGUAGEIIAGG, main_languages)
+selected_data <- decode(selected_data, MAINLANGUAGEIIIAGG, main_languages)
 ```
 
 
@@ -395,6 +423,99 @@ selected_data <- decode(selected_data, WORKSTATUS_DETAIL, list(
   
 )
 )
+```
+
+```{r}
+selected_data$knows_official_language <- apply(
+  selected_data[, c("MAINLANGUAGEIAGG", "MAINLANGUAGEIAGG", "MAINLANGUAGEIIIAGG")],
+  1,
+  function(row) any(row %in% c("Deutsch (oder Schweizerdeutsch)", "Französisch (oder Patois Romand)", "Italienisch (oder Tessiner/Bündner-italienischer Dialekt)", "Englisch"))
+)
+```
+
+```{r}
+foreigners <- selected_data %>% filter(NATIONALITYCAT == "Ausländer" &
+                                         YEAR_QUIZ != 2020 &
+                                         YEAR_QUIZ != 2021)
+```
+
+```{r}
+language_comparison <- foreigners %>%
+  group_by(knows_official_language) %>%
+  summarise(count = n()) %>%
+  mutate(
+    category = ifelse(knows_official_language, "Knows at least one", "Knows none"),
+    proportion = count / sum(count)
+  )
+
+print(language_comparison)
+```
+```{r}
+ggplot(foreigners, aes(x = knows_official_language, y = TIMEWORKEDPERWEEKSUM, fill = knows_official_language)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Knows None", "Knows At Least One")) +
+  labs(
+    title = "Working Hours Comparison by Language Knowledge",
+    x = "Knows Official Language",
+    y = "Working Hours"
+  ) +
+  theme_minimal()
+```
+```{r}
+t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ knows_official_language, data = foreigners)
+print(t_test)
+```
+```{r}
+t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ NATIONALITYCAT, data = selected_data)
+print(t_test)
+```
+
+
+
+```{r}
+generate_charts_by_occupation(foreigners, CURROCCUPATIONISCOAGG, knows_official_language)
+```
+
+```{r}
+work_time_by_two_categories(foreigners, knows_official_language, CURROCCUPATIONISCOAGG)
+```
+
+```{r}
+# Завантажуємо бібліотеки
+library(dplyr)
+
+# Підрахунок статистичних мір для іноземців та місцевих
+summary_stats <- selected_data %>%
+  group_by(NATIONALITYCAT) %>%
+  summarise(
+    mean_hours = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),      # Середнє
+    median_hours = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),  # Медіана
+    sd_hours = sd(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),          # Стандартне відхилення
+    min_hours = min(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),        # Мінімум
+    max_hours = max(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),        # Максимум
+    Q1 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.25, na.rm = TRUE), # Перший квартиль
+    Q3 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.75, na.rm = TRUE), # Третій квартиль
+    count = n()                                                 # Кількість спостережень
+  )
+
+# Виводимо результат
+print(summary_stats)
+
+# Порівняння за допомогою візуалізації (Boxplot)
+library(ggplot2)
+
+ggplot(selected_data, aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparison of Working Hours by Nationality",
+    x = "Nationality",
+    y = "Weekly Working Hours"
+  ) +
+  theme_minimal()
+
+# Додатково: Тест на значущість різниці (t-тест)
+t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ NATIONALITYCAT, data = selected_data)
+print(t_test)
 ```
 
 
