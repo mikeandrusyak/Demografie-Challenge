@@ -2,6 +2,8 @@
 library(dplyr)
 library(ggplot2)
 library(purrr)
+source("chart_functions.R")
+source("decode_lists.R")
 ```
 
 ```{r}
@@ -27,86 +29,6 @@ decode <- function(df, var, decode_mapping) {
 ```
 
 ```{r}
-box_plot <- function(df,cat,value){
-  df %>% 
-    filter({{cat}}>0 & {{value}}> 0) %>% 
-    ggplot(aes(x={{cat}}, y={{value}}, fill = {{cat}}))+
-    geom_boxplot(na.rm = TRUE)+
-    theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
-      axis.text.y = element_text(size = 10),                       
-      legend.text = element_text(size = 10),                    
-      plot.margin = margin(10, 20, 10, 10)  
-  )
-}
-```
-
-```{r}
-work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
-  for (year in 2010:2021){
-    data_filtered <- {{df}} %>% 
-      filter(YEAR_QUIZ == year) %>% 
-      filter(!is.na({{cat1}}) & TIMEWORKEDPERWEEKSUM > 0 
-             & !is.na({{cat2}})) %>% 
-      group_by({{cat1}}, {{cat2}})
-    if (!is.null(sort_levels)) {
-      data_filtered <- data_filtered %>%  mutate({{cat2}} := factor({{cat2}},levels = sort_levels))
-    } 
-    chart <- data_filtered %>% 
-      summarise(average_time_worked = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>%
-      ggplot(aes(x={{cat2}}, y = average_time_worked, fill={{cat1}}))+
-      geom_bar(stat = "identity", position = "dodge")+
-      geom_text(aes(label = round(average_time_worked, 1)),
-                position = position_dodge(width = 0.9), 
-                vjust = 2,
-                size = 3) +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
-        axis.text.y = element_text(size = 10),                       
-        legend.text = element_text(size = 10),                    
-        plot.margin = margin(10, 20, 10, 10)  
-      )
-    print(chart)
-  }
-}
-```
-
-```{r}
-generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
-
-  for (year in 2010:2021) {
-    chart <- data %>% 
-      filter(YEAR_QUIZ == year & 
-               !is.na({{ occupation_column }}) & 
-               !is.na({{ nationality_column }})) %>% 
-      ggplot(aes(x = {{ occupation_column }}, fill = {{ nationality_column }})) +
-      geom_bar(position = "stack", na.rm = TRUE) +
-      geom_text(
-        aes(label = scales::percent(
-          round(after_stat(count) / tapply(after_stat(count), 
-                                           after_stat(x), sum)[after_stat(x)], 2))),
-        stat = "count",
-        position = position_fill(vjust = 0.5),
-        size = 3
-      ) +
-      labs(
-        title = paste("Year:", year),
-        x = "Occupation",
-        y = "Proportion"
-      ) +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-        axis.text.y = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        plot.margin = margin(10, 20, 10, 10)
-      )
-    
-    print(chart)
-  }
-}
-```
-
-```{r}
 summary(zp_merged_data)
 ```
 ```{r}
@@ -122,7 +44,8 @@ selected_data <- zp_merged_data %>% select(HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGII
                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT, 
                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
-                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG,MAINLANGUAGEIIIAGG,MAINLANGUAGEIIIAGG,MAINLANGUAGEIIIAGG)
+                          CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG,MAINLANGUAGEIAGG,
+                          MAINLANGUAGEIIAGG,MAINLANGUAGEIIIAGG)
 ```
 
 ```{r}
@@ -231,9 +154,6 @@ selected_data <- selected_data %>% mutate(
 ```
 
 ```{r}
-head(selected_data %>%  select(AGE, AGE_GROUP))
-```
-```{r}
 selected_data <- decode(selected_data, TIMEWORKEDPERWEEKSUM, list(
     "-9" = NA,
     "-8" = NA,
@@ -241,29 +161,16 @@ selected_data <- decode(selected_data, TIMEWORKEDPERWEEKSUM, list(
   )
 )
 selected_data$TIMEWORKEDPERWEEKSUM <- as.numeric(as.character(selected_data$TIMEWORKEDPERWEEKSUM))
-```
-
-```{r}
-selected_data %>% filter(TIMEWORKEDPERWEEKSUM >50 | TIMEWORKEDPERWEEKSUM < 20) %>% select(AGE, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM,CURROCCUPATIONISCOAGG, knows_official_language)
-```
-
-
-```{r}
 selected_data$TIMEWORKEDPERWEEKSUM %>% unique()
 ```
 
-
 ```{r}
-mean_age <- mean(selected_data$TIMEWORKEDPERWEEKSUM)
-median_age <- median(selected_data$TIMEWORKEDPERWEEKSUM)
-
 selected_data %>% filter(!is.na(TIMEWORKEDPERWEEKSUM)) %>% 
   ggplot(aes(x = TIMEWORKEDPERWEEKSUM)) +
     geom_density(fill = "skyblue", alpha = 0.5) +  # Щільність розподілу
     labs(title = "Work time per week", x = "time", y = "density") +
     theme_minimal(base_size = 14)
 ```
-
 
 ```{r}
 selected_data <- selected_data %>% mutate(
@@ -274,76 +181,6 @@ selected_data <- selected_data %>% mutate(
                         TIMEWORKEDPERWEEKSUM >= 41 & TIMEWORKEDPERWEEKSUM <= 44 ~ "100-110%",
                         TIMEWORKEDPERWEEKSUM >= 45 & TIMEWORKEDPERWEEKSUM <= 48 ~ "110-120%",
                         TIMEWORKEDPERWEEKSUM >= 49 ~ ">120%"),
-)
-```
-
-```{r}
-selected_data <- decode(selected_data, CURROCCUPATIONISCOAGG, list(
-    "1" = "Führungskräfte",
-    "2" = "Akademische Berufe",
-    "3" = "Techniker und gleichrangige Berufe",
-    "4" = "Bürokräfte und verwandte Berufe",
-    "5" = "Dienstleistungsberufe und Verkäufer",
-    "6" = "Fachkräfte in Land- und Forstwirtschaft",
-    "7" = "Handwerks- und verwandte Berufe",
-    "8" = "Anlagen und Maschinenbediener, Montierer",
-    "9" = "Hilfsarbeitskräfte",
-    "0" = "Angehörige der regulären Streitkräfte",
-    "-9" = NA,
-    "-8" = NA,
-    "-7" = NA
-  )
-)
-  
-```
-
-```{r}
-main_languages <- list(
-  "1" = "Deutsch (oder Schweizerdeutsch)",
-  "2" = "Französisch (oder Patois Romand)",
-  "3" = "Italienisch (oder Tessiner/Bündner-italienischer Dialekt)",
-  "4" = "Rätoromanisch",
-  "5" = "Serbisch/Kroatisch",
-  "6" = "Albanisch",
-  "7" = "Portugiesisch",
-  "8" = "Spanisch",
-  "9" = "Englisch",
-  "10" = "Türkisch",
-  "11" = "Tamil",
-  "12" = "Arabisch",
-  "13" = "Niederländisch",
-  "14" = "Andere Sprache/n"
-)
-
-selected_data <- decode(selected_data, MAINLANGUAGEIAGG, main_languages)
-selected_data <- decode(selected_data, MAINLANGUAGEIIAGG, main_languages)
-selected_data <- decode(selected_data, MAINLANGUAGEIIIAGG, main_languages)
-```
-
-
-```{r}
-selected_data <- decode(selected_data, NATIONALITYCONTI, list(
-    "1" = "Schweiz",
-    "2" = "Mitgliedstaat der Europäischen Union (EU)",
-    "3" = "Mitgliedstaat der EFTA",
-    "4" = "Anderer europäischer Staat",
-    "5" = "Afrika",
-    "6" = "Nordamerika",
-    "7" = "Lateinamerika und Karibik",
-    "8" = "Asien",
-    "9" = "Ozeanien",
-    "-1" = "Staatenlos",
-    "-9" = NA
-  )
-)
-```
-
-```{r}
-selected_data <- decode(selected_data, NATIONALITYCAT, list(
-    "1" = "Schweiz",
-    "2" = "Ausländer",
-    "-9" = NA
-  )
 )
 ```
 
@@ -359,82 +196,31 @@ selected_data <- selected_data %>%
 ```
 
 ```{r}
-selected_data <- decode(selected_data, HIGHESTCOMPLEDUAGGII, list(
-    "1" = "No school / 1-7 years",
-    "2" = "8-9 years of school / Bridge program",
-    "3" = "Vocational training / Vocational school",
-    "4" = "General education / Matura",
-    "5" = "Higher vocational education / Technical school",
-    "6" = "University / Higher education",
-    "-9" = NA
-  )
-)
-```
-
-```{r}
-selected_data <- decode(selected_data, RESIDENTPERMIT, list(
-    "1" = "A",
-    "2" = "B",
-    "3" = "C",
-    "4" = "Ci",
-    "5" = "F",
-    "6" = "G",
-    "7" = "L",
-    "8" = "N",
-    "9" = "S",
-    "10" = "Meldepflichtige",
-    "11" = "Funktionär",
-    "12" = "Funktionär",
-    "13" = NA,
-    "-2" = "Schweiz",
-    "-6" = NA,
-    "-8" = NA,
-    "-9" = NA
-  )
-)
-```
-
-
-```{r}
-selected_data <- decode(selected_data, WORKSTATUS_DETAIL, list(
-  "111" = "Selbständige mit Angestellten",
-  "112" = "Selbständige ohne Angestellte",
-  "113" = "Mitarbeitende Familienmitglieder",
-  "121" = "Arbeitnehmer in Unternehmensleitung",
-  "131" = "Arbeitnehmer in Unternehmensleitung",
-  "124" = "Arbeitnehmer im mittleren und unteren Kader",
-  "134" = "Arbeitnehmer im mittleren und unteren Kader",
-  "125" = "Arbeitnehmer ohne Vorgesetztenfunktion",
-  "135" = "Arbeitnehmer ohne Vorgesetztenfunktion",
-  "126" = "Arbeitnehmer in geschützter Werkstatt",
-  "136" = "Arbeitnehmer in geschützter Werkstatt",
-  "127" = "Lernende in der dualen beruflichen Grundbildung",
-  "137" = "Lernende in der dualen beruflichen Grundbildung",
-  "128" = "Arbeitnehmer ohne weitere Angaben",
-  "130" = "Erwerbstätige ohne weitere Angaben",
-  "200" = "Erwerbslose",
-  "301" = "Nichterwerbspersonen in Ausbildung",
-  "302" = "Nichterwerbspersonen mit freiwilliger Tätigkeit",
-  "303" = "Hausfrauen/Hausmänner",
-  "304" = "Rentner, Pensionierte",
-  "305" = "Invalide oder teilinvalide Nichterwerbspersonen",
-  "306" = "Übrige Nichterwerbspersonen",
-  "-9" = NA
-  
-)
-)
+selected_data <- decode(selected_data, CURROCCUPATIONISCOAGG, occupation_isco_agg)
+selected_data <- decode(selected_data, MAINLANGUAGEIAGG, main_languages)
+selected_data <- decode(selected_data, MAINLANGUAGEIIAGG, main_languages)
+selected_data <- decode(selected_data, MAINLANGUAGEIIIAGG, main_languages)
+selected_data <- decode(selected_data, NATIONALITYCONTI, nationality_conti)
+selected_data <- decode(selected_data, NATIONALITYCAT, nationality_category)
+selected_data <- decode(selected_data, HIGHESTCOMPLEDUAGGII, education_level)
+selected_data <- decode(selected_data, RESIDENTPERMIT, permit)
+selected_data <- decode(selected_data, WORKSTATUS_DETAIL, work_status)
 ```
 
 ```{r}
 selected_data$knows_official_language <- apply(
   selected_data[, c("MAINLANGUAGEIAGG", "MAINLANGUAGEIAGG", "MAINLANGUAGEIIIAGG")],
   1,
-  function(row) any(row %in% c("Deutsch (oder Schweizerdeutsch)", "Französisch (oder Patois Romand)", "Italienisch (oder Tessiner/Bündner-italienischer Dialekt)", "Englisch"))
+  function(row) any(row %in% c("German", "French", "Italian"))
 )
 ```
 
 ```{r}
-foreigners <- selected_data %>% filter(NATIONALITYCAT == "Ausländer" &
+selected_data %>% filter(TIMEWORKEDPERWEEKSUM >50 | TIMEWORKEDPERWEEKSUM < 20) %>% select(AGE, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM,CURROCCUPATIONISCOAGG, knows_official_language)
+```
+
+```{r}
+foreigners <- selected_data %>% filter(NATIONALITYCAT == "Foreign" &
                                          YEAR_QUIZ != 2020 &
                                          YEAR_QUIZ != 2021)
 ```
@@ -470,8 +256,6 @@ t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ NATIONALITYCAT, data = selected_data)
 print(t_test)
 ```
 
-
-
 ```{r}
 generate_charts_by_occupation(foreigners, CURROCCUPATIONISCOAGG, knows_official_language)
 ```
@@ -479,6 +263,45 @@ generate_charts_by_occupation(foreigners, CURROCCUPATIONISCOAGG, knows_official_
 ```{r}
 work_time_by_two_categories(foreigners, knows_official_language, CURROCCUPATIONISCOAGG)
 ```
+```{r}
+# Завантажуємо бібліотеки
+library(dplyr)
+
+# Підрахунок статистичних мір для іноземців та місцевих
+summary_stats <- foreigners %>%
+  group_by(knows_official_language) %>%
+  summarise(
+    mean_hours = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),      # Середнє
+    median_hours = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),  # Медіана
+    sd_hours = sd(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),          # Стандартне відхилення
+    min_hours = min(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),        # Мінімум
+    max_hours = max(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),        # Максимум
+    Q1 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.25, na.rm = TRUE), # Перший квартиль
+    Q3 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.75, na.rm = TRUE), # Третій квартиль
+    count = n()                                                 # Кількість спостережень
+  )
+
+# Виводимо результат
+print(summary_stats)
+
+# Порівняння за допомогою візуалізації (Boxplot)
+library(ggplot2)
+
+ggplot(foreigners, aes(x = knows_official_language, y = TIMEWORKEDPERWEEKSUM, fill = knows_official_language)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparison of Working Hours by Nationality",
+    x = "Nationality",
+    y = "Weekly Working Hours"
+  ) +
+  theme_minimal()
+
+# Додатково: Тест на значущість різниці (t-тест)
+t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ knows_official_language, data = foreigners)
+print(t_test)
+```
+
+
 
 ```{r}
 # Завантажуємо бібліотеки
@@ -518,13 +341,6 @@ t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ NATIONALITYCAT, data = selected_data)
 print(t_test)
 ```
 
-
-```{r}
-head(selected_data)
-```
-
-
-
 ```{r}
 box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
 ```
@@ -547,22 +363,12 @@ generate_charts_by_occupation(without_swiss, CURROCCUPATIONISCOAGG, RESIDENTPERM
 
 
 ```{r}
-work_time_by_two_categories(selected_data, NATIONALITYCONTI, HIGHESTCOMPLEDUAGGII, c("No school / 1-7 years", 
-                           "8-9 years of school / Bridge program",
-                           "Vocational training / Vocational school",
-                           "General education / Matura",
-                           "Higher vocational education / Technical school",
-                           "University / Higher education"))
+work_time_by_two_categories(selected_data, NATIONALITYCONTI, HIGHESTCOMPLEDUAGGII, education_level)
 ```
 
 
 ```{r}
-work_time_by_two_categories(selected_data, NATIONALITYCAT, HIGHESTCOMPLEDUAGGII, c("No school / 1-7 years", 
-                           "8-9 years of school / Bridge program",
-                           "Vocational training / Vocational school",
-                           "General education / Matura",
-                           "Higher vocational education / Technical school",
-                           "University / Higher education"))
+work_time_by_two_categories(selected_data, NATIONALITYCAT, HIGHESTCOMPLEDUAGGII, education_level)
 ```
 
 ```{r}
@@ -570,7 +376,6 @@ work_time_by_two_categories(selected_data, NATIONALITYCAT, CURROCCUPATIONISCOAGG
 ```
 ```{r}
 work_time_by_two_categories(selected_data, RESIDENTPERMIT, CURROCCUPATIONISCOAGG)
-
 ```
 
 
