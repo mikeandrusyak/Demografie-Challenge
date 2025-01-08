@@ -55,12 +55,9 @@ work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
 }
 
 generate_charts_by_occupation <- function(data, occupation_column, nationality_column) {
-  
-  for (year in 2010:2021) {
     chart <- data %>% 
-      filter(YEAR_QUIZ == year & 
-               !is.na({{ occupation_column }}) & 
-               !is.na({{ nationality_column }})) %>% 
+      filter(!is.na({{ occupation_column }}) & 
+            !is.na({{ nationality_column }})) %>% 
       ggplot(aes(x = {{ occupation_column }}, fill = {{ nationality_column }})) +
       geom_bar(position = "stack", na.rm = TRUE) +
       geom_text(
@@ -72,7 +69,7 @@ generate_charts_by_occupation <- function(data, occupation_column, nationality_c
         size = 3
       ) +
       labs(
-        title = paste("Year:", year),
+        title = paste("Occupation by permit"),
         x = "Occupation",
         y = "Proportion"
       ) +
@@ -84,5 +81,4 @@ generate_charts_by_occupation <- function(data, occupation_column, nationality_c
       )
     
     print(chart)
-  }
 }

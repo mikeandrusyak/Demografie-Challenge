@@ -7,91 +7,28 @@ source("decode_lists.R")
 ```
 
 ```{r}
+zp_merged_data <- read.csv("zp_merged_data.csv")
 hh_merged_data <- read.csv("hh_merged_data.csv")
 ```
 
 ```{r}
-selected_data <- hh_merged_data %>% select(AGE, RENTNET,
-                                           HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT,
-                          NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE, WORKSTATUS_DETAIL,
-                          TIMEWORKEDPERWEEKSUM,MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
-                          CURROCCUPATIONISCOAGG)
+# Об'єднання даних
+merged_data <- hh_merged_data %>%
+  left_join(zp_merged_data, by = c("HOUSEHOLDYEARLYID"="HOUSEHOLDYEARLYID","YEAR_QUIZ"="YEAR_QUIZ"))
+```
 
-# selected_data <- hh_merged_data %>% select(HIGHESTCOMPLEDU, HIGHESTCOMPLEDUAGGII, AGE, RENTNET,
-#                                            HOUSEHOLDYEARLYID, NATIONALITYAGG, NATIONALITYCAT,
-#                           NATIONALITYCONTI, NATIONALITYID, NATIONALITYSTATE,
-#                           WORKSTATUS, WORKSTATUS_DETAIL, TIMEWORKEDPERWEEKSUM,STATUSINEMPLOYMENT,
-#                           STATUSINEMPL_DETAIL, MIGRATIONSTATUS, RESIDENTPERMIT, YEAR_QUIZ,
-#                           CURROCCUPATIONISCO,CURROCCUPATIONISCOAGG,MAINLANGUAGEIAGG,
-#                           MAINLANGUAGEIIAGG,MAINLANGUAGEIIIAGG)
+```{r}
+summary(merged_data)
+```
+
+
+```{r}
+selected_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,WORKSTATUS_DETAIL,
+                          TIMEWORKEDPERWEEKSUM, RESIDENTPERMIT,CURROCCUPATIONISCOAGG)
 ```
 
 ```{r}
 summary(selected_data)
-```
-```{r}
-# Завантаження бібліотек
-library(ggplot2)
-library(reshape2)
-
-# Обробка даних: вибір лише числових колонок
-numeric_data <- selected_data[sapply(selected_data, is.numeric)]
-# Обчислення кореляційної матриці
-numeric_data[is.na(numeric_data)] <- 0
-correlation_matrix <- cor(numeric_data)
-
-# Перетворення матриці в довгий формат для ggplot2
-correlation_long <- melt(correlation_matrix)
-
-# Побудова теплової карти
-heatmap_plot <- ggplot(data = correlation_long, aes(x = Var1, y = Var2, fill = value)) +
-  geom_tile() +
-  geom_text(aes(label = round(value, 2)), color = "black", size = 3) + # Додавання значень кореляції
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) + # Вибір кольорової гами
-  theme_minimal() +
-  labs(title = "Correlation Heatmap",
-       x = "Variables",
-       y = "Variables",
-       fill = "Correlation") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Відображення графіка
-print(heatmap_plot)
-```
-```{r}
-# Обчислення кореляційної матриці
-correlation_matrix <- cor(numeric_data, use = "complete.obs")
-
-# Вибір кореляцій для TIMEWORKEDPERWEEKSUM
-timeworked_correlations <- correlation_matrix["TIMEWORKEDPERWEEKSUM", ]
-
-# Видалення самої змінної TIMEWORKEDPERWEEKSUM (кореляція з собою завжди 1)
-timeworked_correlations <- timeworked_correlations[names(timeworked_correlations) != "TIMEWORKEDPERWEEKSUM"]
-
-# Сортування за значеннями кореляції
-sorted_correlations <- sort(timeworked_correlations, decreasing = TRUE)
-
-# Отримання топ-5 позитивних і негативних кореляцій
-top_5_positive <- head(sorted_correlations, 10)
-top_5_negative <- tail(sorted_correlations, 10)
-
-# Вивід результатів
-print("Топ-5 позитивних кореляцій:")
-print(top_5_positive)
-
-print("Топ-5 негативних кореляцій:")
-print(top_5_negative)
-```
-
-
-```{r}
-selected_data <- selected_data %>% mutate(
-  AGE_GROUP = case_when(AGE < 18 ~ "<18",
-                        AGE >= 18 & AGE <= 30 ~ "18-30",
-                        AGE >= 31 & AGE <= 40 ~ "31-40",
-                        AGE >= 41 & AGE < 50 ~ "41-50",
-                        AGE >= 51 ~ "51+"),
-)
 ```
 
 ```{r}
@@ -149,127 +86,25 @@ selected_data <- decode(selected_data, WORKSTATUS_DETAIL, work_status)
 ```
 
 ```{r}
-selected_data$knows_official_language <- apply(
-  selected_data[, c("MAINLANGUAGEIAGG", "MAINLANGUAGEIAGG", "MAINLANGUAGEIIIAGG")],
-  1,
-  function(row) any(row %in% c("German", "French", "Italian"))
-)
+distribution <- function(var){
+    ggplot(selected_data, aes(x = {{var}})) +
+    geom_bar(fill = "lightblue", color = "black") +
+    ggtitle("Розподілення категорій") +
+    xlab("Категорії") +
+    ylab("Кількість") +
+    theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
+    axis.text.y = element_text(size = 10),                       
+    legend.text = element_text(size = 10),                    
+    plot.margin = margin(10, 20, 10, 10)  
+  )
+}
 ```
-
-```{r}
-selected_data %>% filter(TIMEWORKEDPERWEEKSUM >50 | TIMEWORKEDPERWEEKSUM < 20) %>% select(AGE, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM,CURROCCUPATIONISCOAGG, knows_official_language)
-```
-```{r}
-selected_data %>% filter( RENTNET > 0 ) %>% 
-    mutate(WORK_TIME_GROUP = factor(WORK_TIME_GROUP, levels = c("<50%", "50-70%", "70-90%", "90-100%", "100-110%", "110-120%", ">120%", "NA"))) %>%
-  group_by(WORK_TIME_GROUP, NATIONALITYCAT) %>%
-  summarise(mean_rent = mean(RENTNET, na.rm = TRUE)) %>%
-  ggplot(aes(x = WORK_TIME_GROUP, y = mean_rent, fill = NATIONALITYCAT)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(x = "Time Worked per Week (Grouped)", y = "Mean Rent Net", fill = "Nationality Category") +
-  theme_minimal()
-```
-```{r}
-library(dplyr)
-
-rent_analysis <- selected_data %>%
-  mutate(
-    pays_rent = case_when(
-      RENTNET > 0 ~ "Pays Rent",
-      RENTNET < 1 | is.na(RENTNET) ~ "Does Not Pay Rent"
-    )
-  ) %>%
-  group_by(NATIONALITYCAT,pays_rent) %>%
-  summarise(count = n()) %>%
-  mutate(percentage = count / sum(count) * 100)
-
-
-print(rent_analysis)
-```
-
 
 
 ```{r}
 foreigners <- selected_data %>% filter(NATIONALITYCAT == "Foreign")
 ```
-
-```{r}
-language_comparison <- foreigners %>%
-  group_by(knows_official_language) %>%
-  summarise(count = n()) %>%
-  mutate(
-    category = ifelse(knows_official_language, "Knows at least one", "Knows none"),
-    proportion = count / sum(count)
-  )
-
-print(language_comparison)
-```
-```{r}
-ggplot(foreigners, aes(x = knows_official_language, y = TIMEWORKEDPERWEEKSUM, fill = knows_official_language)) +
-  geom_boxplot() +
-  scale_x_discrete(labels = c("Knows None", "Knows At Least One")) +
-  labs(
-    title = "Working Hours Comparison by Language Knowledge",
-    x = "Knows Official Language",
-    y = "Working Hours"
-  ) +
-  theme_minimal()
-```
-```{r}
-t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ knows_official_language, data = foreigners)
-print(t_test)
-```
-```{r}
-t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ NATIONALITYCAT, data = selected_data)
-print(t_test)
-```
-
-```{r}
-generate_charts_by_occupation(foreigners, CURROCCUPATIONISCOAGG, knows_official_language)
-```
-
-```{r}
-work_time_by_two_categories(foreigners, knows_official_language, CURROCCUPATIONISCOAGG)
-```
-```{r}
-# Завантажуємо бібліотеки
-library(dplyr)
-
-# Підрахунок статистичних мір для іноземців та місцевих
-summary_stats <- foreigners %>%
-  group_by(knows_official_language) %>%
-  summarise(
-    mean_hours = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),      # Середнє
-    median_hours = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),  # Медіана
-    sd_hours = sd(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),          # Стандартне відхилення
-    min_hours = min(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),        # Мінімум
-    max_hours = max(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),        # Максимум
-    Q1 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.25, na.rm = TRUE), # Перший квартиль
-    Q3 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.75, na.rm = TRUE), # Третій квартиль
-    count = n()                                                 # Кількість спостережень
-  )
-
-# Виводимо результат
-print(summary_stats)
-
-# Порівняння за допомогою візуалізації (Boxplot)
-library(ggplot2)
-
-ggplot(foreigners, aes(x = knows_official_language, y = TIMEWORKEDPERWEEKSUM, fill = knows_official_language)) +
-  geom_boxplot() +
-  labs(
-    title = "Comparison of Working Hours by Nationality",
-    x = "Nationality",
-    y = "Weekly Working Hours"
-  ) +
-  theme_minimal()
-
-# Додатково: Тест на значущість різниці (t-тест)
-t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ knows_official_language, data = foreigners)
-print(t_test)
-```
-
-
 
 ```{r}
 # Завантажуємо бібліотеки
@@ -289,113 +124,97 @@ summary_stats <- selected_data %>%
     count = n()                                                 # Кількість спостережень
   )
 
-# Виводимо результат
+selected_data %>% filter(TIMEWORKEDPERWEEKSUM>0 & !is.na(NATIONALITYCAT)) %>% 
+  ggplot(aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
+    geom_boxplot() +
+    labs(
+      title = "Comparison of Working Hours by Nationality",
+      x = "Nationality",
+      y = "Weekly Working Hours"
+    ) +
+    theme_minimal()
+
 print(summary_stats)
-
-# Порівняння за допомогою візуалізації (Boxplot)
-library(ggplot2)
-
-ggplot(selected_data, aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
-  geom_boxplot() +
-  labs(
-    title = "Comparison of Working Hours by Nationality",
-    x = "Nationality",
-    y = "Weekly Working Hours"
-  ) +
-  theme_minimal()
 
 # Додатково: Тест на значущість різниці (t-тест)
 t_test <- t.test(TIMEWORKEDPERWEEKSUM ~ NATIONALITYCAT, data = selected_data)
 print(t_test)
 ```
-
 ```{r}
-box_plot(selected_data, NATIONALITYCONTI, TIMEWORKEDPERWEEKSUM)
+rent_analysis <- selected_data %>%
+  filter(!is.na(NATIONALITYCAT)) %>%
+  mutate(
+    pays_rent = case_when(
+      RENTNET > 0 ~ "Pays Rent",
+      RENTNET < 1 | is.na(RENTNET) ~ "Does Not Pay Rent"
+    )
+  ) %>%
+  group_by(NATIONALITYCAT, pays_rent) %>%
+  summarise(count = n(), .groups = "drop") %>% # Використовуємо .groups = "drop", щоб уникнути залишення груп
+  group_by(NATIONALITYCAT) %>% # Групуємо тільки за NATIONALITYCAT для коректних розрахунків відсотків
+  mutate(percentage = round(count / sum(count) * 100,2)) %>%
+  ungroup() # Знімаємо всі групування, щоб уникнути можливих майбутніх конфліктів
+
+ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Розподіл оплати оренди за категоріями національності",
+       x = "Категорія національності",
+       y = "Кількість",
+       fill = "Статус оплати оренди") +
+  theme_minimal()
+
+print(rent_analysis)
 ```
 ```{r}
-box_plot(selected_data, NATIONALITYCAT, TIMEWORKEDPERWEEKSUM)
-```
-```{r}
-work_time_by_two_categories(selected_data, NATIONALITYCAT, CURROCCUPATIONISCOAGG)
-```
-
-```{r}
-generate_charts_by_occupation(selected_data, CURROCCUPATIONISCOAGG, NATIONALITYCAT)
-```
-```{r}
-# Load necessary libraries
-library(ggplot2)
-library(dplyr)
-
-# Summarize data for the pie chart
-occupation_summary <- selected_data %>%
-  filter(!is.na(CURROCCUPATIONISCOAGG)) %>% 
-  group_by(NATIONALITYCAT, CURROCCUPATIONISCOAGG) %>%
-  summarise(count = n(),
-            mean_time = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE)) %>%
-  mutate(percentage = count / sum(count) * 100) %>% 
-  arrange(CURROCCUPATIONISCOAGG)
-occupation_summary
-```
-
-
-```{r}
-without_swiss <- selected_data %>% 
-  filter(RESIDENTPERMIT != "Schweiz")
-generate_charts_by_occupation(without_swiss, CURROCCUPATIONISCOAGG, RESIDENTPERMIT)
-```
-```{r}
-generate_charts_by_occupation(foreigners, CURROCCUPATIONISCOAGG, HIGHESTCOMPLEDUAGGII)
-```
-```{r}
-work_time_by_two_categories(foreigners, CURROCCUPATIONISCOAGG, HIGHESTCOMPLEDUAGGII, education_level)
-```
-
-
-
-```{r}
-work_time_by_two_categories(selected_data, NATIONALITYCONTI, HIGHESTCOMPLEDUAGGII, education_level)
-```
-
-
-```{r}
-work_time_by_two_categories(selected_data, NATIONALITYCAT, HIGHESTCOMPLEDUAGGII, education_level)
+foreigners %>% 
+  filter(!is.na(CURROCCUPATIONISCOAGG) & 
+        !is.na(RESIDENTPERMIT)) %>% 
+  ggplot(aes(x = CURROCCUPATIONISCOAGG, fill = RESIDENTPERMIT)) +
+  geom_bar(position = "stack", na.rm = TRUE) +
+  geom_text(
+    aes(label = scales::percent(
+      round(after_stat(count) / tapply(after_stat(count), 
+                                       after_stat(x), sum)[after_stat(x)], 2))),
+    stat = "count",
+    position = position_stack(vjust = 0.5),
+    size = 3
+  ) +
+  labs(
+    title = paste("Occupation by permit"),
+    x = "Occupation",
+    y = "Proportion"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.text = element_text(size = 10),
+    plot.margin = margin(10, 20, 10, 10)
+  )
 ```
 
-```{r}
-work_time_by_two_categories(selected_data, NATIONALITYCAT, CURROCCUPATIONISCOAGG)
-```
-```{r}
-work_time_by_two_categories(selected_data, RESIDENTPERMIT, CURROCCUPATIONISCOAGG)
-```
 ```{r}
 median_by_permit <- selected_data %>% filter(TIMEWORKEDPERWEEKSUM>0) %>% 
   select(RESIDENTPERMIT, TIMEWORKEDPERWEEKSUM) %>% 
   group_by(RESIDENTPERMIT) %>% 
-  summarise(mean_time = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>% 
+  summarise(mean_time = round(mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), 2), .groups = "drop") %>% 
+  filter(!is.na(RESIDENTPERMIT)) %>% 
   arrange(desc(mean_time))
-median_by_permit
-```
-```{r}
-median_by_permit %>% 
-  ggplot(aes(x = {{ RESIDENTPERMIT }}, fill = {{ median_time }})) +
-      geom_bar(position = "stack", na.rm = TRUE) 
-```
-```{r}
-selected_data %>% filter(YEAR_QUIZ == 2010)
-```
-```{r}
-selected_data %>% filter(YEAR_QUIZ == 2011)
-```
 
+ggplot(median_by_permit, aes(x = reorder(RESIDENTPERMIT, -mean_time), y = mean_time, fill = RESIDENTPERMIT)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Mean work time per week by permit",
+    x = "Permit type",
+    y = "Mean work time per week"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(fill = "none")
 
-
-```{r}
-generate_charts_by_occupation(selected_data, CURROCCUPATIONISCOAGG, NATIONALITYCAT)
+print(median_by_permit)
 ```
-
 ```{r}
-generate_charts_by_occupation(selected_data, WORKSTATUS_DETAIL, NATIONALITYCAT)
+work_time_by_two_categories(selected_data, NATIONALITYCAT,WORKSTATUS_DETAIL)
 ```
 
 
