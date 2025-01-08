@@ -12,6 +12,20 @@ box_plot <- function(df,cat,value){
     )
 }
 
+decode <- function(df, var, decode_mapping) {
+  # Перетворюємо ключі у списку на текст
+  for (key in names(decode_mapping)) {
+    value <- decode_mapping[[key]]
+    df <- df %>%
+      mutate({{ var }} := case_match(
+        as.character({{ var }}),  # Перетворюємо значення змінної на текст
+        key ~ value,              # Зіставляємо ключ зі значенням
+        .default = as.character({{ var }})  # Залишаємо оригінальне значення, якщо немає відповідності
+      ))
+  }
+  return(df)
+}
+
 work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
   for (year in 2010:2021){
     data_filtered <- {{df}} %>% 
@@ -23,7 +37,7 @@ work_time_by_two_categories <- function(df, cat1, cat2, sort_levels = NULL){
       data_filtered <- data_filtered %>%  mutate({{cat2}} := factor({{cat2}},levels = sort_levels))
     } 
     chart <- data_filtered %>% 
-      summarise(average_time_worked = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>%
+      summarise(average_time_worked = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), .groups = "drop") %>%
       ggplot(aes(x={{cat2}}, y = average_time_worked, fill={{cat1}}))+
       geom_bar(stat = "identity", position = "dodge")+
       geom_text(aes(label = round(average_time_worked, 1)),
