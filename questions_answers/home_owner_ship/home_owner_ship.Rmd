@@ -1,4 +1,567 @@
 ```{r}
 library(dplyr)
+library(ggplot2)
 ```
+
+```{r}
+zp_merged_data <- read.csv("zp_merged_data.csv")
+hh_merged_data <- read.csv("hh_merged_data.csv")
+hhm_merged_data <- read.csv("hhm_merged_data.csv")
+```
+
+```{r}
+summary(zp_merged_data)
+```
+
+```{r}
+zp_merged_data %>% 
+  select(YEAR_QUIZ, SECCITIZENSHIP) %>% 
+  filter(is.na(SECCITIZENSHIP)) %>% 
+  unique()
+```
+
+```{r}
+summary(hh_merged_data)
+```
+
+```{r}
+summary(hhm_merged_data)
+```
+
+```{r}
+merged_data <- zp_merged_data %>%
+  left_join(hh_merged_data, by = "HOUSEHOLDYEARLYID") %>%
+  left_join(hhm_merged_data, by = "HOUSEHOLDYEARLYID") %>%
+  select(
+    HOUSEHOLDYEARLYID, 
+    SECCITIZENSHIP, 
+    AGE, 
+    IN_EDUCATION, 
+    MAINRESIDENCECATEGORY, 
+    TYPEOFOWNERSHIP,
+    SIZEOFPRIVATEHOUSEHOLD,
+    HH_NATIONALITYCAT, 
+    HH_NATIONALITYCONTI
+  )
+```
+
+```{r}
+head(merged_data)
+```
+
+```{r}
+cleaned_data <- merged_data %>%
+  filter(!is.na(SECCITIZENSHIP) & !is.na(TYPEOFOWNERSHIP))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(TYPEOFOWNERSHIP = ifelse(TYPEOFOWNERSHIP == -9, NA, TYPEOFOWNERSHIP))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(
+    SECCITIZENSHIP = as.character(SECCITIZENSHIP), 
+    SECCITIZENSHIP = na_if(SECCITIZENSHIP, "NA")
+  )
+```
+
+```{r}
+cleaned_data <- cleaned_data %>% 
+  mutate(AGE_GROUP = case_when(
+    AGE < 18 ~ "<18",
+    AGE >= 18 & AGE <= 30 ~ "18-30",
+    AGE >= 31 & AGE <= 40 ~ "31-40",
+    AGE >= 41 & AGE < 50 ~ "41-50",
+    AGE >= 51 ~ "51+"
+  ))
+```
+
+```{r}
+decode <- function(df, var, decode_mapping) {
+  # Convert the keys in the list to text
+  for (key in names(decode_mapping)) {
+    value <- decode_mapping[[key]]
+    df <- df %>%
+      mutate({{ var }} := case_match(
+        as.character({{ var }}),  # Convert the variable's values to text
+        key ~ value,              # Match the key with the corresponding value
+        .default = as.character({{ var }})  # Keep the original value if no match is found
+      ))
+  }
+  return(df)
+}
+```
+
+```{r}
+cleaned_data <- decode(cleaned_data, SECCITIZENSHIP, list(
+    "1" = "No",
+    "2" = "Yes",
+    "-6" = "Not allocable according to the current limits",
+    "-8" = NA,
+    "-9" = "Not specified"
+  )
+)
+
+cleaned_data <- decode(cleaned_data, IN_EDUCATION, list(
+    "0" = "No",
+    "1" = "Yes",
+    "-10" = "Unknown due to conflicting information"
+  )
+)
+
+cleaned_data <- decode(cleaned_data, MAINRESIDENCECATEGORY, list(
+    "1" = "Only one main residence",
+    "2" = "Main and secondary residence in the same canton",
+    "3" = "Main and secondary residence in different cantons",
+    "4" = "Main residence abroad"
+  )
+)
+
+cleaned_data <- decode(cleaned_data, TYPEOFOWNERSHIP, list(
+    "1" = "Tenant or subtenant",
+    "2" = "Cooperative member",
+    "3" = "Condominium/apartment owner",
+    "4" = "Owner of the house",
+    "5" = "Other situation",
+    "-9" = "Not specified"
+  )
+)
+
+cleaned_data <- decode(cleaned_data, SIZEOFPRIVATEHOUSEHOLD, list(
+    "-7" = "Not allotable"
+  )
+)
+
+cleaned_data <- decode(cleaned_data, HH_NATIONALITYCAT, list(
+    "1" = "Swiss",
+    "2" = "Foreigner",
+    "-8" = NA,
+    "-9" = "Not specified"
+  )
+)
+
+cleaned_data <- decode(cleaned_data, HH_NATIONALITYCONTI, list(
+    "1" = "Switzerland",
+    "2" = "Member State of the European Union (EU)",
+    "3" = "Member state of EFTA",
+    "4" = "Other European country",
+    "5" = "Africa",
+    "6" = "North America",
+    "7" = "Latin America and the Caribbean",
+    "8" = "Asia",
+    "9" = "Oceania",
+    "-1" = "Stateless",
+    "-6" = "Not allocable according to the current limits",
+    "-8" = NA,
+    "-9" = "Not specified"
+  )
+)
+```
+
+```{r}
+ cleaned_data%>%
+  filter(
+    !is.na(HH_NATIONALITYCONTI) & 
+    !(HH_NATIONALITYCONTI %in% c("Switzerland", "Not specified", "Not allocable according to the current limits", "Stateless")) &
+    TYPEOFOWNERSHIP != "Not specified"
+  ) %>%
+  ggplot(aes(x = HH_NATIONALITYCONTI, y = proportion, fill = TYPEOFOWNERSHIP)) +
+  geom_bar(stat = "identity", position = "fill") +
+  geom_text(
+    aes(label = scales::percent(proportion, accuracy = 0.1)), 
+    position = position_fill(vjust = 0.5), 
+    size = 3, 
+    color = "white"
+  ) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Homeownership by Continent",
+    x = "Continent of Nationality",
+    y = "Proportion",
+    fill = "Type of Ownership"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)
+  )
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(HOMEOWNERSHIP = case_when(
+    TYPEOFOWNERSHIP %in% c("Condominium/apartment owner", "Owner of the house") ~ "Owner",
+    TYPEOFOWNERSHIP %in% c("Tenant or subtenant", "Other situation") ~ "Renter",
+    TRUE ~ NA_character_
+  ))
+```
+
+```{r}
+homeownership_summary <- cleaned_data %>%
+  group_by(HH_NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  group_by(HH_NATIONALITYCAT) %>%
+  mutate(Proportion = Count / sum(Count) * 100)
+
+print(homeownership_summary)
+```
+
+```{r}
+unique(homeownership_summary$HH_NATIONALITYCAT)
+```
+
+```{r}
+homeownership_summary <- homeownership_summary %>%
+  mutate(HH_NATIONALITYCAT = factor(HH_NATIONALITYCAT,
+                                    levels = c(1, 2, -9),
+                                    labels = c("Swiss", "Foreigner", "Not specified")))
+```
+
+```{r}
+ownership_summary <- cleaned_data %>%
+  group_by(SECCITIZENSHIP, HOMEOWNERSHIP) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  mutate(Proportion = Count / sum(Count))
+print(ownership_summary)
+```
+
+```{r}
+cleaned_data %>%
+  group_by(SECCITIZENSHIP, HOMEOWNERSHIP) %>%
+  summarise(count = n()) %>%
+  mutate(proportion = count / sum(count)) %>%
+  filter(HOMEOWNERSHIP %in% c("Owner", "Renter"))
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = SECCITIZENSHIP, fill = HOMEOWNERSHIP)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Proportion of Homeownership by Citizenship",
+    x = "Citizenship",
+    y = "Proportion",
+    fill = "Homeownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = SECCITIZENSHIP, fill = HOMEOWNERSHIP)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~MAINRESIDENCECATEGORY) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Homeownership by Citizenship and Residence Type",
+    x = "Citizenship",
+    y = "Proportion",
+    fill = "Homeownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = SECCITIZENSHIP, fill = HOMEOWNERSHIP)) +
+  geom_bar(position = "fill") +
+  facet_grid(AGE_GROUP ~ MAINRESIDENCECATEGORY) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Homeownership by Citizenship, Age, and Residence Type",
+    x = "Citizenship",
+    y = "Proportion",
+    fill = "Homeownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  filter(!is.na(HOMEOWNERSHIP))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(HOMEOWNERSHIP = ifelse(is.na(HOMEOWNERSHIP), "Missing", HOMEOWNERSHIP))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  filter(!is.na(SECCITIZENSHIP), !is.na(AGE_GROUP))
+```
+
+```{r}
+sapply(cleaned_data, function(x) sum(is.na(x)))
+```
+
+```{r}
+summary_table <- cleaned_data %>%
+  group_by(SECCITIZENSHIP, HOMEOWNERSHIP) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(proportion = count / sum(count) * 100)
+
+print(summary_table)
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = SECCITIZENSHIP, fill = HOMEOWNERSHIP)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Proportion of Homeownership by Nationality",
+    x = "Nationality",
+    y = "Proportion",
+    fill = "Homeownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = SECCITIZENSHIP, fill = HOMEOWNERSHIP)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~AGE_GROUP) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Homeownership by Nationality and Age Group",
+    x = "Nationality",
+    y = "Proportion",
+    fill = "Homeownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = SECCITIZENSHIP, fill = HOMEOWNERSHIP)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~MAINRESIDENCECATEGORY) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Homeownership by Nationality and Residence Type",
+    x = "Nationality",
+    y = "Proportion",
+    fill = "Homeownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+str(merged_data)  # Check structure
+summary(merged_data)  # Check summary statistics
+```
+
+```{r}
+cleaned_data <- merged_data %>%
+  filter(!is.na(HH_NATIONALITYCAT), !is.na(SIZEOFPRIVATEHOUSEHOLD))
+```
+
+```{r}
+merged_data[!complete.cases(merged_data), ]
+```
+
+```{r}
+cleaned_data <- merged_data %>%
+  filter(!is.na(SIZEOFPRIVATEHOUSEHOLD), !is.na(TYPEOFOWNERSHIP), !is.na(HH_NATIONALITYCAT), !is.na(HH_NATIONALITYCONTI), !is.na(HH_NATIONALITYSTATE))
+```
+
+```{r}
+summary_table <- cleaned_data %>%
+  group_by(HH_NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(proportion = count / sum(count) * 100)
+
+print(summary_table)
+```
+
+```{r}
+# Check unique values in HH_NATIONALITYCAT
+unique(cleaned_data$HH_NATIONALITYCAT)
+
+# Check unique values in SIZEOFPRIVATEHOUSEHOLD
+unique(cleaned_data$SIZEOFPRIVATEHOUSEHOLD)
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  filter(!is.na(HH_NATIONALITYCAT), !is.na(SIZEOFPRIVATEHOUSEHOLD), !is.na(TYPEOFOWNERSHIP))
+```
+
+```{r}
+summary_table <- cleaned_data %>%
+  group_by(HH_NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(proportion = count / sum(count) * 100)
+
+print(summary_table)
+```
+
+```{r}
+# Check unique values
+unique(cleaned_data$TYPEOFOWNERSHIP)
+unique(cleaned_data$HH_NATIONALITYCAT)
+
+# Check structure
+str(cleaned_data)
+```
+
+```{r}
+# Convert TYPEOFOWNERSHIP and HH_NATIONALITYCAT to factors
+cleaned_data <- cleaned_data %>%
+  mutate(
+    TYPEOFOWNERSHIP = as.factor(TYPEOFOWNERSHIP),
+    HH_NATIONALITYCAT = as.factor(HH_NATIONALITYCAT)
+  )
+```
+
+```{r}
+cleaned_data <- decode(cleaned_data, TYPEOFOWNERSHIP, list(
+    "1" = "Tenant or subtenant",
+    "2" = "Cooperative member",
+    "3" = "Condominium/apartment owner",
+    "4" = "Owner of the house",
+    "5" = "Other situation",
+    "-9" = "Not specified"
+))
+```
+
+```{r}
+unique(cleaned_data$TYPEOFOWNERSHIP)
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = HH_NATIONALITYCAT, fill = TYPEOFOWNERSHIP)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Proportion of Homeownership by Nationality",
+    x = "Nationality",
+    y = "Proportion",
+    fill = "Type of Ownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(TYPEOFOWNERSHIP_GROUPED = case_when(
+    TYPEOFOWNERSHIP %in% c("Owner of the house", "Condominium/apartment owner") ~ "Owner",
+    TYPEOFOWNERSHIP %in% c("Tenant or subtenant", "Other situation") ~ "Renter",
+    TRUE ~ "Other"
+  ))
+```
+
+```{r}
+# Check column names
+colnames(cleaned_data)
+
+# Check unique values of SIZEOFPRIVATEHOUSEHOLD_GROUP (if it exists)
+if ("SIZEOFPRIVATEHOUSEHOLD_GROUP" %in% colnames(cleaned_data)) {
+  unique(cleaned_data$SIZEOFPRIVATEHOUSEHOLD_GROUP)
+} else {
+  print("SIZEOFPRIVATEHOUSEHOLD_GROUP does not exist.")
+}
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(SIZEOFPRIVATEHOUSEHOLD_GROUP = case_when(
+    SIZEOFPRIVATEHOUSEHOLD == 1 ~ "1 member",
+    SIZEOFPRIVATEHOUSEHOLD >= 2 & SIZEOFPRIVATEHOUSEHOLD <= 3 ~ "2-3 members",
+    SIZEOFPRIVATEHOUSEHOLD >= 4 ~ "4+ members",
+    TRUE ~ NA_character_
+  ))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  filter(!is.na(SIZEOFPRIVATEHOUSEHOLD_GROUP))
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  group_by(HH_NATIONALITYCAT, SIZEOFPRIVATEHOUSEHOLD_GROUP, TYPEOFOWNERSHIP_GROUPED) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(HH_NATIONALITYCAT, SIZEOFPRIVATEHOUSEHOLD_GROUP) %>%
+  mutate(percent = count / sum(count) * 100)
+```
+
+```{r}
+ggplot(cleaned_data, aes(x = HH_NATIONALITYCAT, y = percent, fill = TYPEOFOWNERSHIP_GROUPED)) +
+  geom_bar(stat = "identity", position = "fill") +
+  geom_text(
+    aes(label = sprintf("%.1f%%", percent)),
+    position = position_fill(vjust = 0.5),
+    size = 3
+  ) +
+  facet_wrap(~SIZEOFPRIVATEHOUSEHOLD_GROUP) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Homeownership by Nationality and Household Size",
+    x = "Nationality",
+    y = "Proportion",
+    fill = "Homeownership"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# Check the column names in cleaned_data
+colnames(cleaned_data)
+```
+
+```{r}
+# View the first few rows of cleaned_data
+head(cleaned_data)
+```
+
+```{r}
+# Test with a small sample dataset
+test_data <- data.frame(
+  SECCITIZENSHIP = c(1, 2, 1, 2),
+  TYPEOFOWNERSHIP = c("Owner", "Renter", "Owner", "Renter")
+)
+
+test_data$citizenship_status <- ifelse(test_data$SECCITIZENSHIP == 1, "Native", "Migrant")
+print(test_data)
+```
+
+```{r}
+# Ensure SECCITIZENSHIP is included during the merge
+merged_data <- left_join(zp_merged_data, hh_merged_data, by = "HOUSEHOLDYEARLYID") %>%
+  select(HOUSEHOLDYEARLYID, SECCITIZENSHIP, TYPEOFOWNERSHIP, AGE, IN_EDUCATION, MAINRESIDENCECATEGORY)
+
+# Clean the data
+cleaned_data <- merged_data %>%
+  filter(!is.na(SECCITIZENSHIP) & !is.na(TYPEOFOWNERSHIP))
+```
+
+```{r}
+# Check for SECCITIZENSHIP in zp_merged_data
+colnames(zp_merged_data)
+
+# Check for SECCITIZENSHIP in hh_merged_data
+colnames(hh_merged_data)
+```
+
+```{r}
+# Define citizenship status as Native or Migrant
+cleaned_data$citizenship_status <- ifelse(cleaned_data$SECCITIZENSHIP == 1, "Native", "Migrant")
+```
+
+```{r}
+# Summarize ownership data by citizenship status
+ownership_summary <- table(cleaned_data$citizenship_status, cleaned_data$TYPEOFOWNERSHIP)
+
+# View the summary table
+print(ownership_summary)
+```
+
+
 
