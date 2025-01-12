@@ -48,7 +48,7 @@ sheet_names <- lapply(all_data, names) # sheet names in each file
 variables_zp <- c( "CURRACTIVITYSTATUSIII",
                        "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
                        "CURRACTIVITY_HOME","IN_EDUCATION",
-                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI"
+                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI","AGE","SEX","CURROCCUPATIONISCO"
                    )
 
 ```

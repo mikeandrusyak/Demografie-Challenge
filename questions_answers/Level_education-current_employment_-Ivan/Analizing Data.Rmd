@@ -1,12 +1,13 @@
 
 ```{r}
+library(vcd)
 library(dplyr)
 library(ggplot2)
 ```
 
 
 ```{r}
-data <- read.csv("variables_zp.rds")
+data <- read.csv("zp_merged_data.csv")
 ```
 
 
@@ -25,7 +26,7 @@ edu_decode_Ja <- function(df, column_name) {
     mutate(!!sym(column_name) := case_when(
       !!sym(column_name) == 0 ~ "Nein",
       !!sym(column_name) == 1 ~ "Ja",
-      TRUE ~ as.numeric(!!sym(column_name))
+      TRUE ~ as.character(!!sym(column_name))
     ))
 }
 
@@ -38,6 +39,17 @@ decoded_data <- data
 for (col in columns_to_decode) {
   decoded_data <- edu_decode_Ja(decoded_data, col)
 }
+
+decoded_data <- decoded_data %>%
+  mutate(
+    employment_type = case_when(
+      CURRACTIVITY_FULL == "Ja" ~ "Full time",
+      CURRACTIVITY_PART == "Ja" ~ "Part time",
+      TRUE ~ "Unemployed"
+    )
+  )
+
+
 ```
 
 
@@ -47,157 +59,201 @@ for (col in columns_to_decode) {
 decoded_data <- decoded_data %>%
   mutate(
     CURRACTIVITYSTATUSIII = case_when(
-      CURRACTIVITYSTATUSIII == 1 ~ "Vollzeiterwerbstätige (90-100%)",
-      CURRACTIVITYSTATUSIII == 2 ~ "Teilzeiterwerbstätige I (70-89%)",
-      CURRACTIVITYSTATUSIII == 3 ~ "Teilzeiterwerbstätige II (50-69%)",
-      CURRACTIVITYSTATUSIII == 4 ~ "Teilzeiterwerbstätige III (<50%)",
-      CURRACTIVITYSTATUSIII == 5 ~ "Erwerbslose",
-      CURRACTIVITYSTATUSIII == 6 ~ "In Ausbildung",
-      CURRACTIVITYSTATUSIII == 7 ~ "Hausfrauen/Hausmänner",
-      CURRACTIVITYSTATUSIII == 8 ~ "Rentner/innen",
-      CURRACTIVITYSTATUSIII == 9 ~ "Andere Nichterwerbspersonen",
-      TRUE ~ as.character(CURRACTIVITYSTATUSIII)
-    ),
-    HIGHESTCOMPLEDUAGGI = case_when(
-      HIGHESTCOMPLEDUAGGI == 1 ~ "Sekundarstufe 1",
-      HIGHESTCOMPLEDUAGGI == 2 ~ "Sekundarstufe 2",
-      HIGHESTCOMPLEDUAGGI == 3 ~ "Tertiärstufe",
-      TRUE ~ as.character(HIGHESTCOMPLEDUAGGI)
+      CURRACTIVITYSTATUSIII == 1 ~ "Full-time (90-100%)",
+      CURRACTIVITYSTATUSIII == 2 ~ "Part-time I (70-89%)",
+      CURRACTIVITYSTATUSIII == 3 ~ "Part-time II (50-69%)",
+      CURRACTIVITYSTATUSIII == 4 ~ "Part-time III (<50%)",
+      CURRACTIVITYSTATUSIII == 5 ~ "Unemployed",
+      CURRACTIVITYSTATUSIII == 6 ~ "In training",
+      CURRACTIVITYSTATUSIII == 7 ~ "Housewoman/Houseman",
+      CURRACTIVITYSTATUSIII == 8 ~ "Retired",
+      CURRACTIVITYSTATUSIII == 9 ~ "Other non-working",
+      TRUE ~ as.factor(CURRACTIVITYSTATUSIII)
     ),
     HIGHESTCOMPLEDU = case_when(
-      HIGHESTCOMPLEDU == 1 ~ "keine",
-      HIGHESTCOMPLEDU == 2 ~ "Bis max. 7 Jahre obligatorische Schule",
-      HIGHESTCOMPLEDU == 3 ~ "Obligatorische Schule (Real-, Sekundar-, Bezirks-, Orientierungsschule, Pro-, Untergymnasium, Sonderschule)",
-      HIGHESTCOMPLEDU == 4 ~ "1-jährige Vorlehre, 1-jährige allgemeinbildende Schule, 10. Schuljahr, 1-jährige Berufswahlschule, Haushaltslehrjahr, Sprachschule (mind. 1 Jahr) mit Schlusszertifikat, Sozialjahr, Brückenangebote oder ähnliche Ausbildung",
-      HIGHESTCOMPLEDU == 5 ~ "2- bis 3-jährige Diplommittelschule, Verkehrsschule, Fachmittelschule FMS oder ähnliche Ausbildung",
-      HIGHESTCOMPLEDU == 6 ~ "Berufliche Grundbildung (Anlehre, 2- bis 4-jährige Berufslehre oder Vollzeitberufsschule, Handelsdiplom, Lehrwerkstätte oder ähnliche Ausbildung)",
-      HIGHESTCOMPLEDU == 7 ~ "Gymnasiale Maturität, Lehrkräfte-Seminar (vorbereitende Ausbildung für Lehrkräfte von Kindergarten, Primarschule, Handarbeit, Hauswirtschaft)",
-      HIGHESTCOMPLEDU == 8 ~ "Berufs- oder Fachmaturität",
-      HIGHESTCOMPLEDU == 9 ~ "Höhere Fach- und Berufsausbildung mit eidg. Fachausweis, eidg. Diplom oder Meisterprüfung, höhere Fachschule für Technik (Technikerschule TS), für Wirtschaft (HKG) oder ähnliche höhere Fachschule (2 Jahre Voll- oder 3 Jahre Teilzeitstudium)",
-      HIGHESTCOMPLEDU == 10 ~ "Höhere Fachschule (Vorgänger von Fachhochschulen, z.B. HTL, HWV, HFG, HFS) inkl. Nachdiplome (3 Jahre Voll- oder 4 Jahre Teilzeitstudium)",
-      
+      HIGHESTCOMPLEDU %in% c(1) ~ "No education",
+      HIGHESTCOMPLEDU %in% c(2, 3) ~ "School education",
+      HIGHESTCOMPLEDU %in% c(4, 5) ~ "College",
+      HIGHESTCOMPLEDU %in% c(6) ~ "Professional training",
+      HIGHESTCOMPLEDU %in% c(7, 8) ~ "Higher education (Bachelor/Master)",
+      HIGHESTCOMPLEDU %in% c(9, 10) ~ "Advanced education (Doctorate/Technical)",
+      TRUE ~ as.factor(HIGHESTCOMPLEDU)
+    ),
+    SEX = case_when(
+      SEX %in% c (1) ~ "Male",
+      SEX %in% c (2) ~ "Female",
+      TRUE ~ as.factor(SEX)
+    )
   )
-
 ```
 
 
 ```{r}
 head(decoded_data)
 ```
+```{r}
+
+
+# Фильтрация недопустимых значений
+decoded_data <- decoded_data %>%
+  filter(HIGHESTCOMPLEDU %in% c("No education", 
+                                "School education", 
+                                "College", 
+                                "Professional training", 
+                                "Higher education (Bachelor/Master)", 
+                                "Advanced education (Doctorate/Technical)"))
+
+
+decoded_data <- decoded_data %>%
+  filter(if_all(everything(), ~ . != "-9" & . != "-10"))
+
+decoded_data <- decoded_data %>%
+  mutate(
+    CURRACTIVITYSTATUSIII = as.factor(CURRACTIVITYSTATUSIII),
+    CURRACTIVITY_FULL = as.factor(CURRACTIVITY_FULL),
+    CURRACTIVITY_PART = as.factor(CURRACTIVITY_PART),
+    CURRACTIVITY_HOME = as.factor(CURRACTIVITY_HOME),
+    IN_EDUCATION = as.factor(IN_EDUCATION),
+    HIGHESTCOMPLEDU = as.factor(HIGHESTCOMPLEDU),
+    HIGHESTCOMPLEDUAGGI = as.factor(HIGHESTCOMPLEDUAGGI),
+    AGE = as.factor(AGE),
+    SEX = as.factor(SEX),
+    employment_type = as.factor(employment_type)
+  )
+decoded_data$HIGHESTCOMPLEDU <- factor(decoded_data$HIGHESTCOMPLEDU, levels = c(
+  "No education",
+  "School education",
+  "College",
+  "Professional training",
+  "Higher education (Bachelor/Master)",
+  "Advanced education (Doctorate/Technical)"
+))
+str(decoded_data)
+```
 
 
 ```{r}
 decoded_data <- decoded_data %>%
-  filter(if_all(everything(), ~ . != "-9"))
-
+  filter(!CURRACTIVITYSTATUSIII %in% c("Andere Nichterwerbspersonen", "In Ausbildung", "Rentner/innen"))
+levels(decoded_data$CURRACTIVITYSTATUSIII)
 ```
 
 
-```{r}
-table(decoded_data$HIGHESTCOMPLEDUAGGI)
-```
 
-```{r}
-
-employment_data <- decoded_data %>%
-  filter(!is.na(HIGHESTCOMPLEDUAGGI), CURRACTIVITYSTATUSI == "Erwerbstätige") %>% 
-  group_by(HIGHESTCOMPLEDUAGGI) %>%
-  summarise(
-    total = n(),
-    employed = sum(CURRACTIVITY_FULL == "Ja", na.rm = TRUE), 
-    employment_rate = (employed / total) * 100 
-  ) %>%
-  arrange(desc(employment_rate))
-
-
-ggplot(employment_data, aes(x = reorder(HIGHESTCOMPLEDUAGGI, -employment_rate), y = employment_rate)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  labs(
-    title = "Корреляция между уровнем образования и процентом занятости",
-    x = "Level of education",
-    y = "employement (%)"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-```
 ```{r}
 employment_type_data <- decoded_data %>%
-  filter(!is.na(HIGHESTCOMPLEDUAGGI)) %>%
+  filter(!is.na(HIGHESTCOMPLEDU)) %>%
   mutate(employment_type = case_when(
-    CURRACTIVITY_FULL == "Ja" ~ "Полная занятость",
-    CURRACTIVITY_PART == "Ja" ~ "Частичная занятость",
-    CURRACTIVITY_MULTI == "Ja" ~ "Несколько работ",
-    TRUE ~ "Нет занятости"
+    CURRACTIVITY_FULL == "Ja" ~ "Full time",
+    CURRACTIVITY_PART == "Ja" ~ "Part time",
+    TRUE ~ "Unemployed"
   )) %>%
-  group_by(HIGHESTCOMPLEDUAGGI, employment_type) %>%
+  group_by(HIGHESTCOMPLEDU, employment_type) %>%
   summarise(count = n()) %>%
   mutate(percentage = count / sum(count) * 100)
 
-ggplot(employment_type_data, aes(x = HIGHESTCOMPLEDUAGGI, y = percentage, fill = employment_type)) +
-  geom_bar(stat = "identity", position = "fill") +
-  labs(
-    title = "Распределение типов занятости по уровням образования",
-    x = "Уровень образования",
-    y = "Процент",
-    fill = "Тип занятости"
+ggplot(employment_type_data, aes(x = HIGHESTCOMPLEDU, y = percentage, fill = employment_type)) +
+  geom_bar(stat = "identity", position = "fill") +  
+  geom_text(
+    aes(
+      label = sprintf("%.1f%%", percentage),
+      group = employment_type
+    ),
+    position = position_fill(vjust = 0.5),
+    size = 3
   ) +
+  labs(
+    title = "Distribution of employment types by education level",
+    x = "Education Level",
+    y = "Percent",
+    fill = "Type of employment"
+  ) +
+  
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
+
+
 ```{r}
-student_data <- decoded_data %>%
-  filter(!is.na(HIGHESTCOMPLEDUAGGI)) %>%
-  group_by(HIGHESTCOMPLEDUAGGI) %>%
-  summarise(
-    total = n(),
-    students = sum(CURRACTIVITY_STUDENT == "Ja", na.rm = TRUE),
-    student_rate = (students / total) * 100
+# Рассчёт percentage
+education_type_data <- decoded_data %>%
+  group_by(employment_type, IN_EDUCATION) %>%
+    summarise(count = n(), .groups = "drop") %>%
+      mutate(percentage = count / sum(count) * 100)
+
+# Построение графика
+ggplot(education_type_data, aes(x = employment_type, y = percentage, fill = IN_EDUCATION)) +
+  geom_bar(stat = "identity", position = "stack") +  
+  geom_text(
+    aes(label = sprintf("%.1f%%", percentage)),
+    position = position_stack(vjust = 0.5),
+    size = 3
+  ) +
+  labs(
+    title = "Distribution of education status by highest education level",
+    x = "Highest Education Level",
+    y = "Percent",
+    fill = "Education is ongoing"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+# Пример: сгруппированные столбики 
+# employment_type ~ HIGHESTCOMPLEDU, сгруппировано по SEX
+# Сначала сформируем суммарные данные:
+
+grouped_data <- decoded_data %>%
+  filter(!is.na(HIGHESTCOMPLEDU), !is.na(SEX)) %>%
+  group_by(HIGHESTCOMPLEDU, SEX, employment_type) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Построим сгруппированную диаграмму
+ggplot(grouped_data, aes(x = HIGHESTCOMPLEDU, y = percentage, fill = employment_type)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+  facet_wrap(~ SEX) + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  labs(
+    title = "Employment type by education level, grouped by sex",
+    x = "Highest Education Level",
+    y = "Percent",
+    fill = "Type of employment"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+
+# Пример: убедимся, что AGE - это числовая переменная
+decoded_data <- decoded_data %>%
+  mutate(AGE = as.numeric(as.character(AGE)))  # если фактически хранилась как factor/character
+
+# Теперь строим boxplot
+ggplot(decoded_data, aes(
+  x = HIGHESTCOMPLEDU,
+  y = AGE,
+  fill = employment_type
+)) +
+  # Если хотим, чтобы для каждого уровня образования было по несколько боксов (Full time / Part time / Unemployed),
+  # указываем group = interaction(HIGHESTCOMPLEDU, employment_type) и сдвигаем боксы:
+  geom_boxplot(
+    position = position_dodge(width = 0.9),
+    aes(group = interaction(HIGHESTCOMPLEDU, employment_type))
+  ) +
+  labs(
+    title = "Age distribution by education level and employment type",
+    x = "Highest Education Level",
+    y = "Age",
+    fill = "Employment Type"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
   )
-
-ggplot(student_data, aes(x = student_rate, y = reorder(HIGHESTCOMPLEDUAGGI, student_rate))) +
-  geom_point(size = 3, color = "darkgreen") +
-  labs(
-    title = "Уровень образования и процент студентов",
-    x = "Процент студентов",
-    y = "Уровень образования"
-  ) +
-  theme_minimal()
 ```
 
-```{r}
-ggplot(decoded_data %>% filter(!is.na(HIGHESTCOMPLEDUAGGI), CURRACTIVITY_FULL == "Ja"), 
-       aes(x = HIGHESTCOMPLEDUAGGI)) +
-  geom_density(aes(fill = HIGHESTCOMPLEDUAGGI), alpha = 0.5) +
-  labs(
-    title = "Плотность полной занятости по уровням образования",
-    x = "Уровень образования",
-    y = "Плотность"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
 
-```{r}
-employment_count <- decoded_data %>%
-  filter(!is.na(HIGHESTCOMPLEDUAGGI)) %>%
-  mutate(employment_status = case_when(
-    CURRACTIVITY_FULL == "Ja" ~ "Полная занятость",
-    CURRACTIVITY_PART == "Ja" ~ "Частичная занятость",
-    CURRACTIVITY_DISOCC == "Ja" ~ "Безработные",
-    TRUE ~ "Другие"
-  ))
-
-ggplot(employment_count, aes(x = HIGHESTCOMPLEDUAGGI, fill = employment_status)) +
-  geom_bar(position = "dodge") +
-  labs(
-    title = "Распределение типов занятости по уровням образования",
-    x = "Уровень образования",
-    y = "Количество людей",
-    fill = "Тип занятости"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
 

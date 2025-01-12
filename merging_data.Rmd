@@ -41,7 +41,7 @@ load_data <- function(year, file_type, variables) {
     data <- data %>% select(any_of(c(variables, "CURRACTIVITYSTATUSIII",
                        "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
                        "CURRACTIVITY_HOME","IN_EDUCATION",
-                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI")))
+                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI", "AGE","SEX","CURROCCUPATIONISCO")))
     return(data)
   } else {
     message(paste("Файл не знайдено:", file_path))
