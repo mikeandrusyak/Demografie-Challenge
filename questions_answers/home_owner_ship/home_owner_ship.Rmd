@@ -6,7 +6,6 @@ library(ggplot2)
 ```{r}
 zp_merged_data <- read.csv("zp_merged_data.csv")
 hh_merged_data <- read.csv("hh_merged_data.csv")
-hhm_merged_data <- read.csv("hhm_merged_data.csv")
 ```
 
 ```{r}
@@ -14,24 +13,12 @@ summary(zp_merged_data)
 ```
 
 ```{r}
-zp_merged_data %>% 
-  select(YEAR_QUIZ, SECCITIZENSHIP) %>% 
-  filter(is.na(SECCITIZENSHIP)) %>% 
-  unique()
-```
-
-```{r}
 summary(hh_merged_data)
 ```
 
 ```{r}
-summary(hhm_merged_data)
-```
-
-```{r}
 merged_data <- zp_merged_data %>%
-  left_join(hh_merged_data, by = "HOUSEHOLDYEARLYID") %>%
-  left_join(hhm_merged_data, by = "HOUSEHOLDYEARLYID") %>%
+  left_join(hh_merged_data, , by = c("HOUSEHOLDYEARLYID"="HOUSEHOLDYEARLYID","YEAR_QUIZ"="YEAR_QUIZ")) %>%
   select(
     HOUSEHOLDYEARLYID, 
     SECCITIZENSHIP, 
@@ -40,18 +27,13 @@ merged_data <- zp_merged_data %>%
     MAINRESIDENCECATEGORY, 
     TYPEOFOWNERSHIP,
     SIZEOFPRIVATEHOUSEHOLD,
-    HH_NATIONALITYCAT, 
-    HH_NATIONALITYCONTI
+    NATIONALITYCAT, 
+    NATIONALITYCONTI
   )
 ```
 
 ```{r}
 head(merged_data)
-```
-
-```{r}
-cleaned_data <- merged_data %>%
-  filter(!is.na(SECCITIZENSHIP) & !is.na(TYPEOFOWNERSHIP))
 ```
 
 ```{r}
@@ -134,7 +116,7 @@ cleaned_data <- decode(cleaned_data, SIZEOFPRIVATEHOUSEHOLD, list(
   )
 )
 
-cleaned_data <- decode(cleaned_data, HH_NATIONALITYCAT, list(
+cleaned_data <- decode(cleaned_data, NATIONALITYCAT, list(
     "1" = "Swiss",
     "2" = "Foreigner",
     "-8" = NA,
@@ -142,7 +124,7 @@ cleaned_data <- decode(cleaned_data, HH_NATIONALITYCAT, list(
   )
 )
 
-cleaned_data <- decode(cleaned_data, HH_NATIONALITYCONTI, list(
+cleaned_data <- decode(cleaned_data, NATIONALITYCONTI, list(
     "1" = "Switzerland",
     "2" = "Member State of the European Union (EU)",
     "3" = "Member state of EFTA",
@@ -161,21 +143,27 @@ cleaned_data <- decode(cleaned_data, HH_NATIONALITYCONTI, list(
 ```
 
 ```{r}
- cleaned_data%>%
+proportions_data <- cleaned_data %>%
   filter(
-    !is.na(HH_NATIONALITYCONTI) & 
-    !(HH_NATIONALITYCONTI %in% c("Switzerland", "Not specified", "Not allocable according to the current limits", "Stateless")) &
+    !is.na(NATIONALITYCONTI) & 
+    !(NATIONALITYCONTI %in% c("Switzerland", "Not specified", "Not allocable according to the current limits", "Stateless")) &
     TYPEOFOWNERSHIP != "Not specified"
   ) %>%
-  ggplot(aes(x = HH_NATIONALITYCONTI, y = proportion, fill = TYPEOFOWNERSHIP)) +
+  group_by(NATIONALITYCONTI, TYPEOFOWNERSHIP) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(NATIONALITYCONTI) %>%
+  mutate(proportion = count / sum(count))
+
+proportions_data %>%
+  ggplot(aes(x = NATIONALITYCONTI, y = proportion, fill = TYPEOFOWNERSHIP)) +
   geom_bar(stat = "identity", position = "fill") +
   geom_text(
-    aes(label = scales::percent(proportion, accuracy = 0.1)), 
+    aes(label = sprintf("%.1f%%", proportion * 100)), # Форматування відсотків
     position = position_fill(vjust = 0.5), 
     size = 3, 
     color = "white"
   ) +
-  scale_y_continuous(labels = scales::percent_format()) +
+  scale_y_continuous(labels = function(x) sprintf("%.0f%%", x * 100)) + # Форматування осі
   labs(
     title = "Homeownership by Continent",
     x = "Continent of Nationality",
@@ -199,21 +187,21 @@ cleaned_data <- cleaned_data %>%
 
 ```{r}
 homeownership_summary <- cleaned_data %>%
-  group_by(HH_NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
+  group_by(NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
   summarise(Count = n(), .groups = "drop") %>%
-  group_by(HH_NATIONALITYCAT) %>%
+  group_by(NATIONALITYCAT) %>%
   mutate(Proportion = Count / sum(Count) * 100)
 
 print(homeownership_summary)
 ```
 
 ```{r}
-unique(homeownership_summary$HH_NATIONALITYCAT)
+unique(homeownership_summary$NATIONALITYCAT)
 ```
 
 ```{r}
 homeownership_summary <- homeownership_summary %>%
-  mutate(HH_NATIONALITYCAT = factor(HH_NATIONALITYCAT,
+  mutate(NATIONALITYCAT = factor(NATIONALITYCAT,
                                     levels = c(1, 2, -9),
                                     labels = c("Swiss", "Foreigner", "Not specified")))
 ```
@@ -357,7 +345,7 @@ summary(merged_data)  # Check summary statistics
 
 ```{r}
 cleaned_data <- merged_data %>%
-  filter(!is.na(HH_NATIONALITYCAT), !is.na(SIZEOFPRIVATEHOUSEHOLD))
+  filter(!is.na(NATIONALITYCAT), !is.na(SIZEOFPRIVATEHOUSEHOLD))
 ```
 
 ```{r}
@@ -366,12 +354,12 @@ merged_data[!complete.cases(merged_data), ]
 
 ```{r}
 cleaned_data <- merged_data %>%
-  filter(!is.na(SIZEOFPRIVATEHOUSEHOLD), !is.na(TYPEOFOWNERSHIP), !is.na(HH_NATIONALITYCAT), !is.na(HH_NATIONALITYCONTI), !is.na(HH_NATIONALITYSTATE))
+  filter(!is.na(SIZEOFPRIVATEHOUSEHOLD), !is.na(TYPEOFOWNERSHIP), !is.na(NATIONALITYCAT), !is.na(NATIONALITYCONTI))
 ```
 
 ```{r}
 summary_table <- cleaned_data %>%
-  group_by(HH_NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
+  group_by(NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
   summarise(count = n(), .groups = "drop") %>%
   mutate(proportion = count / sum(count) * 100)
 
@@ -379,8 +367,8 @@ print(summary_table)
 ```
 
 ```{r}
-# Check unique values in HH_NATIONALITYCAT
-unique(cleaned_data$HH_NATIONALITYCAT)
+# Check unique values in NATIONALITYCAT
+unique(cleaned_data$NATIONALITYCAT)
 
 # Check unique values in SIZEOFPRIVATEHOUSEHOLD
 unique(cleaned_data$SIZEOFPRIVATEHOUSEHOLD)
@@ -388,12 +376,12 @@ unique(cleaned_data$SIZEOFPRIVATEHOUSEHOLD)
 
 ```{r}
 cleaned_data <- cleaned_data %>%
-  filter(!is.na(HH_NATIONALITYCAT), !is.na(SIZEOFPRIVATEHOUSEHOLD), !is.na(TYPEOFOWNERSHIP))
+  filter(!is.na(NATIONALITYCAT), !is.na(SIZEOFPRIVATEHOUSEHOLD), !is.na(TYPEOFOWNERSHIP))
 ```
 
 ```{r}
 summary_table <- cleaned_data %>%
-  group_by(HH_NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
+  group_by(NATIONALITYCAT, TYPEOFOWNERSHIP) %>%
   summarise(count = n(), .groups = "drop") %>%
   mutate(proportion = count / sum(count) * 100)
 
@@ -403,18 +391,18 @@ print(summary_table)
 ```{r}
 # Check unique values
 unique(cleaned_data$TYPEOFOWNERSHIP)
-unique(cleaned_data$HH_NATIONALITYCAT)
+unique(cleaned_data$NATIONALITYCAT)
 
 # Check structure
 str(cleaned_data)
 ```
 
 ```{r}
-# Convert TYPEOFOWNERSHIP and HH_NATIONALITYCAT to factors
+# Convert TYPEOFOWNERSHIP and NATIONALITYCAT to factors
 cleaned_data <- cleaned_data %>%
   mutate(
     TYPEOFOWNERSHIP = as.factor(TYPEOFOWNERSHIP),
-    HH_NATIONALITYCAT = as.factor(HH_NATIONALITYCAT)
+    NATIONALITYCAT = as.factor(NATIONALITYCAT)
   )
 ```
 
@@ -434,7 +422,7 @@ unique(cleaned_data$TYPEOFOWNERSHIP)
 ```
 
 ```{r}
-ggplot(cleaned_data, aes(x = HH_NATIONALITYCAT, fill = TYPEOFOWNERSHIP)) +
+ggplot(cleaned_data, aes(x = NATIONALITYCAT, fill = TYPEOFOWNERSHIP)) +
   geom_bar(position = "fill") +
   scale_y_continuous(labels = scales::percent) +
   labs(
@@ -485,14 +473,14 @@ cleaned_data <- cleaned_data %>%
 
 ```{r}
 cleaned_data <- cleaned_data %>%
-  group_by(HH_NATIONALITYCAT, SIZEOFPRIVATEHOUSEHOLD_GROUP, TYPEOFOWNERSHIP_GROUPED) %>%
+  group_by(NATIONALITYCAT, SIZEOFPRIVATEHOUSEHOLD_GROUP, TYPEOFOWNERSHIP_GROUPED) %>%
   summarise(count = n(), .groups = "drop") %>%
-  group_by(HH_NATIONALITYCAT, SIZEOFPRIVATEHOUSEHOLD_GROUP) %>%
+  group_by(NATIONALITYCAT, SIZEOFPRIVATEHOUSEHOLD_GROUP) %>%
   mutate(percent = count / sum(count) * 100)
 ```
 
 ```{r}
-ggplot(cleaned_data, aes(x = HH_NATIONALITYCAT, y = percent, fill = TYPEOFOWNERSHIP_GROUPED)) +
+ggplot(cleaned_data, aes(x = NATIONALITYCAT, y = percent, fill = TYPEOFOWNERSHIP_GROUPED)) +
   geom_bar(stat = "identity", position = "fill") +
   geom_text(
     aes(label = sprintf("%.1f%%", percent)),

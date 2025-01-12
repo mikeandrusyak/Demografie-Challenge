@@ -5,14 +5,14 @@ source("Renaming_Columns.R")
 
 ```{r}
 # Завантаження змінних з файлів
-path_save = "questions_answers/nationality_econ_status/"
+path_save = "questions_answers/home_owner_ship/"
 variables_zp <- readRDS(paste0(path_save,"variables_zp.rds"))
 variables_hh <- readRDS(paste0(path_save,"variables_hh.rds"))
-variables_hhm <- readRDS(paste0(path_save,"variables_hhm.rds"))
+# variables_hhm <- readRDS(paste0(path_save,"variables_hhm.rds"))
 ```
 
 ```{r}
-merged_variables <- c(vatriables_zp,variables_hh)
+# merged_variables <- c(vatriables_zp,variables_hh)
 ```
 
 ```{r}
@@ -97,7 +97,7 @@ merging <- function(start_year, end_year, file_type, variables){
     }
   }
   
-  write.csv(merged_data, paste0("questions_answers/nationality_econ_status/", file_type, "merged_data",".csv"), row.names = FALSE)
+  write.csv(merged_data, paste0("questions_answers/home_owner_ship/", file_type, "merged_data",".csv"), row.names = FALSE)
   
   return(merged_data)
 }
@@ -114,5 +114,5 @@ hh_data_list <- merging(2010, 2021, "hh_", c("HOUSEHOLDYEARLYID", variables_hh))
 
 ```{r}
 # Завантажуємо дані для hhm та hh окремо
-hhm_data_list <- merging(2010, 2021, "hhm_", c("HOUSEHOLDYEARLYID",variables_hhm))
+# hhm_data_list <- merging(2010, 2021, "hhm_", c("HOUSEHOLDYEARLYID",variables_hhm))
 ```
