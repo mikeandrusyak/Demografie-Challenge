@@ -1,3 +1,10 @@
+# decode_lists.R
+for_numeric_variables <- list(
+  "-9" = NA,
+  "-8" = NA,
+  "-7" = NA
+)
+
 occupation_isco_agg <- list(
   "1" = "Managers",
   "2" = "Academic jobs",
