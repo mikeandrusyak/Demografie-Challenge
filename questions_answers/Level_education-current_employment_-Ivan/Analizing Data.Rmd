@@ -1,21 +1,22 @@
 Question: How does education level vary with type of employment?
+------------------------------------------------------------------
 
-Loading the libraries 
+
+
+# Loading the libraries 
 ```{r}
-library(vcd)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 ```
 
-Reading the data file
+# Reading the data file
 ```{r}
 data <- read.csv("zp_merged_data.csv")
 ```
 
 Extracting only the necessary data
 ```{r}
-# I love Kuzu
 selected_data <- data %>% 
   select(
     -CURROCCUPATIONISCO, 
@@ -26,9 +27,7 @@ selected_data <- data %>%
   )
 head(selected_data)
 ```
-```{r}
-print(unique(selected_data$IN_EDUCATION))
-```
+
 
 This code transforms a dataset by creating and modifying variables, making it ready for analysis
 ```{r}
@@ -66,11 +65,13 @@ decoded_data <- selected_data %>%
     
     
 
-decoded_data$AGE <- cut(selected_data$AGE,
-  breaks = c(15, 22, 29, 36, 43, 50, 57, Inf), 
-  right = FALSE, 
-  labels = as.factor(c("15-21", "22-28", "29-35", "36-42", "43-49", "50-56", "57+"))
+decoded_data$AGE <- cut(
+  selected_data$AGE,
+  breaks = c(15, 22, 29, 46, 56, Inf),  
+  right = FALSE,  
+  labels = c("Teen", "Young Adult", "Adult", "Mature Adult", "Mature Adult")
 )
+
 ```
 
 
@@ -93,8 +94,8 @@ print(summary_cleaned_data)
 str(decoded_data)
 ```
 
-
-#Filter and Clean Data 
+ 
+# Filter and Clean Data 
 
 This code filters out invalid and missing values  and drops unused factor levels.The result is stored in cleaned_data for analysis.
 
@@ -118,8 +119,7 @@ Plots
   
 What is the most commonly completed education level and the most common employment type among different generations?
 
--Basic Vocational Education and Training" is the most commonly completed education level among the population.
-
+-Basic Vocational Education and Training is the most commonly completed education level across all age groups. However, younger generations tend to focus more on pursuing higher education, reflecting a shift towards advanced qualifications in recent years.
 
 ```{r}
 heatmap_data <- clean_data %>%
@@ -140,7 +140,7 @@ ggplot(heatmap_data %>%
            )
          ), aes(x = AGE, y = HIGHESTCOMPLEDU, fill = n)) +
   geom_tile(color = "black") + 
-  scale_fill_distiller(palette = "Reds", direction = 1) +
+  scale_fill_distiller(palette = "GnBu", direction = 1) +
   labs(
     title = "Age Group and Education Level",
     x = "Age Group",
@@ -155,6 +155,8 @@ ggplot(heatmap_data %>%
   )
 ```
  
+ 
+ 
 -People start to concentrate on work when they reach 30 Year Age.
 -People mostly prefer to work Full-Time
 ```{r}
@@ -163,7 +165,7 @@ heatmap_data <- clean_data %>%
 
 ggplot(heatmap_data, aes(x = AGE, y = Employment_Type, fill = n)) +
   geom_tile(color = "black") + 
-  scale_fill_distiller(palette = "Reds", direction = 1) +
+  scale_fill_distiller(palette = "GnBu", direction = 1) +
   labs(
     title = "Age Group and Employment Type",
     x = "Age Group",
@@ -183,6 +185,7 @@ ggplot(heatmap_data, aes(x = AGE, y = Employment_Type, fill = n)) +
  
  2. Gender and employment
  
+-Men more likely in full-time work, women concentrated in part-time roles, and a relatively balanced but slightly higher unemployment rate among men.
 ```{r}
 clean_data <- clean_data %>%
     rename(Gender = SEX)
@@ -205,9 +208,10 @@ ggplot(clean_data, aes(x = Employment_Type, fill = Gender)) +
  
 3. Analyzing the people on education
 
-  - What proportion of individuals in each age group are still in education?
-  
-It appears that people tend to stop pursuing education after the age of 22, shifting their focus to work. This pattern is evident in the decreasing proportion of individuals in education as the age group increases.
+- What proportion of individuals in each age group are still in education?
+
+A significant portion of younger individuals are still engaged in continuing education. After the age of 30, most individuals are no longer in education, having completed their formal studies earlier in life.
+
 
 ```{r}
 
@@ -218,6 +222,7 @@ clean_data %>%
     axis.text.x = element_text(angle = 45, hjust = 1), 
     axis.line = element_line(size = 1.5)
   ) +
+  facet_wrap(~HIGHESTCOMPLEDU) +
   scale_fill_brewer(palette = "Set2") + 
   labs(
     title = "Age Group and Education Status",
@@ -229,52 +234,20 @@ clean_data %>%
   
 ```
 
- - How does the highest education level affect continuing education? After which education level and at what age do people tend to stop education and focus on working?
-
-
-```{r}
-
-ggplot(clean_data %>% 
-         mutate(
-           HIGHESTCOMPLEDU = factor(
-             HIGHESTCOMPLEDU,
-             levels = c(
-               "None",
-               "Compulsory Education",
-               "Secondary Schooling",
-               "Basic Vocational Education and Training",
-               "Higher Vocational and Professional Education and Training",
-               "Universities and Higher Education Institutions"
-             )
-           )
-         ),
-       aes(x = HIGHESTCOMPLEDU, fill = IN_EDUCATION)) +
-  geom_bar(position = "fill") +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(size = 1.5)
-  ) +
-  scale_fill_brewer(palette = "Set2") +
-  labs(
-    title = "Proportion of Education Status by Highest Education Level",
-    x = "Highest Education Level",
-    y = "Proportion",
-    fill = "Education Status"
-  ) +
-  coord_flip()
-```
 
  
  
  4.Employment and Education:
 
-What percentage of individuals in education are employed full-time, part-time, or unemployed?
-- The graph largely confirms the hypothesis that a higher level of education is associated with a higher probability of having Full-time employment and a lower probability of being unemployed.
+-What percentage of individuals in education are employed full-time, part-time, or unemployed?
+
+As the age group increases, the unemployment rate decreases, and the Full-Time employment rate rises.
+
+Higher education levels increase employment rates and reduce unemployment.
+
+Part-Time employment is more common, especially among older age groups and at certain education levels.
 
 ```{r}
-
-
-
 ggplot(clean_data %>% 
          mutate(
            HIGHESTCOMPLEDU = factor(
@@ -288,20 +261,22 @@ ggplot(clean_data %>%
                "Universities and Higher Education Institutions"
              )
            )
-         ) ,aes(x = HIGHESTCOMPLEDU, fill = Employment_Type)) +
+         ), aes(x = HIGHESTCOMPLEDU, fill = Employment_Type)) +
   geom_bar(position = "fill") +
+  facet_wrap(~AGE) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1), 
     axis.line = element_line(size = 1.5)
   ) +
-  scale_fill_brewer(palette = "Set2") + 
+  scale_fill_brewer(palette = "Spectral")+
   labs(
     title = "Distribution of Employment Types by Education Level",
     x = "Education Level",
     y = "Proportion"
-  ) +
-  coord_flip()
+  ) 
+
 ```
+
 
 
 
@@ -310,6 +285,24 @@ ggplot(clean_data %>%
 The correlation between level of Education and Employment type
 -------------------------------------------------------------------------------------------------------------
 
-The analysis highlights a strong correlation between education level and employment type. Higher education is associated with significantly better employment outcomes, particularly in securing full-time jobs and reducing the risk of unemployment. Policymakers and educators should focus on enhancing access to education and aligning training programs with workforce demands to ensure economic stability for individuals across all education levels.
+1. Link Between Education Level and Employment
+""""""""""""""""""""""""""""""""""""""""""""""
+There is a clear link between education level and employment type. People with higher education are more likely to get full-time jobs and are less likely to be unemployed.
 
-As the younger generation increasingly prioritizes higher education, this trend suggests they are likely to secure more stable jobs and experience lower unemployment rates in the future. This aligns with Switzerland's substantial financial support for individuals pursuing higher education, reflecting the country's commitment to fostering a highly educated workforce and ensuring long-term economic stability.
+2. Employment Patterns for People in Education
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Full-Time Jobs: As people get older, the number of those with full-time jobs increases.
+Part-Time Jobs: Part-time work is more common, especially for older people and those studying while working.
+Unemployment: Unemployment is higher among young people and those with lower education. However, it decreases as they grow older and finish more education.
+
+3. The Future for Younger Generations
+""""""""""""""""""""""""""""""""""""""""""""""
+Young people are focusing more on higher education. This will likely help them get better jobs and avoid unemployment in the future. Switzerland supports this trend by providing financial help for people in higher education, showing its dedication to building a well-educated workforce.
+
+
+4. Key Points
+""""""""""""""""""""""""""""""""""""""""""""""
+Higher education helps people find jobs and lowers unemployment.
+Governments should create ways for young people to combine education with part-time jobs.
+Supporting education will keep Switzerland’s economy strong in the future.
