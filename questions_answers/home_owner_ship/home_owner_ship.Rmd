@@ -1,34 +1,52 @@
+
+Fix NA
+Make character's  factor
+check last second plot
+----------------------------
+
+
+
+-----------------------------------------------------------------------
+Question : What are the ownership types for different nationalities?
+-----------------------------------------------------------------------
+
+
+
+
+Load Libraries for Data Manipulation and Plotting
 ```{r}
-# 1. Load required libraries
-library(dplyr)     # For data manipulation
-library(ggplot2)   # For plotting
+library(dplyr)    
+library(tidyr)
+library(ggplot2)   
 ```
 
+Read initial data
 ```{r}
-# 2. Read initial data
 zp_merged_data <- read.csv("zp_merged_data.csv")
 hh_merged_data <- read.csv("hh_merged_data.csv")
 ```
 
+
+Define a custom decode function
 ```{r}
-# 3. Define a custom decode function
 decode <- function(df, var, decode_mapping) {
   # Convert the keys in the list to text
   for (key in names(decode_mapping)) {
     value <- decode_mapping[[key]]
     df <- df %>%
       mutate({{ var }} := case_match(
-        as.character({{ var }}),    # Convert the variable's values to text
-        key ~ value,                # Match the key with the corresponding value
-        .default = as.character({{ var }})  # Keep the original value if no match is found
+        as.character({{ var }}),   
+        key ~ value,                
+        .default = as.character({{ var }}) 
       ))
   }
   return(df)
 }
 ```
 
+
+Merge the datasets and select relevant columns
 ```{r}
-# 4. Merge the datasets and select relevant columns
 merged_data <- zp_merged_data %>%
   left_join(
     hh_merged_data, 
@@ -44,17 +62,18 @@ merged_data <- zp_merged_data %>%
   )
 ```
 
-
+Quick checks
 ```{r}
-# 5. Quick checks
 summary(merged_data)
 str(merged_data)
 ```
 
-```{r}
-# 6. Clean data and decode categorical fields
 
-# Remove rows where key fields are missing
+
+Remove rows where key fields are missing, decode categorical fields, and create a cleaned dataset.
+
+
+```{r}
 cleaned_data <- merged_data %>%
   filter(
     !is.na(NATIONALITYCAT),
@@ -104,9 +123,13 @@ cleaned_data <- decode(cleaned_data, NATIONALITYCONTI, list(
 ))
 ```
 
+
+
+
+This cleaning process ensures that the dataset is well-prepared for analysis by handling missing values (e.g., TYPEOFOWNERSHIP and SECCITIZENSHIP), adding meaningful variables like HOMEOWNERSHIP (categorizing individuals as "Owner" or "Renter") and SIZEOFPRIVATEHOUSEHOLD_GROUP (grouping households into "1 member," "2-3 members," and "4+ members"). Additionally, all character columns are converted to factors, and rows with any missing values are removed, resulting in a standardized and analysis-ready dataset.
+
 ```{r}
-# 7. Create additional variables and filter
-# Replace -9 in TYPEOFOWNERSHIP with NA
+
 cleaned_data <- cleaned_data %>%
   mutate(TYPEOFOWNERSHIP = ifelse(is.na(TYPEOFOWNERSHIP), NA, TYPEOFOWNERSHIP))
 
@@ -125,14 +148,13 @@ cleaned_data <- cleaned_data %>%
     TRUE ~ NA_character_
   ))
 
-# Remove rows where HOMEOWNERSHIP or AGE_GROUP is NA
-cleaned_data <- cleaned_data %>%
-  filter(!is.na(HOMEOWNERSHIP), !is.na(AGE_GROUP))
+
 ```
 
 
+
+Group household size
 ```{r}
-# Group household size
 cleaned_data <- cleaned_data %>%
   mutate(
     SIZEOFPRIVATEHOUSEHOLD_GROUP = case_when(
@@ -145,6 +167,16 @@ cleaned_data <- cleaned_data %>%
   filter(!is.na(SIZEOFPRIVATEHOUSEHOLD_GROUP))
 ```
 
+
+```{r}
+glimpse(cleaned_data)
+```
+
+--------------------------------------------------------------
+
+
+
+This function, create_proportional_plot, generates a proportional bar plot from a dataset. It calculates the percentage of categories within groups, displays them as stacked bars, and optionally facets the plot by a variable. The function includes customization options for titles, labels, and color palettes.
 ```{r}
 create_proportional_plot <- function(data, group_var, fill_var, y_var, title, x_label, y_label, facet_var = NULL) {
   # Group and summarise data
@@ -161,17 +193,21 @@ create_proportional_plot <- function(data, group_var, fill_var, y_var, title, x_
       aes(label = sprintf("%.1f%%", proportion)), # Display percentages
       position = position_fill(vjust = 0.5),
       size = 3,
-      color = "white"
+      color = "black"
     ) +
     scale_y_continuous(labels = scales::percent) + # Format y-axis as percentages
-    labs(
-      title = title,
-      x = x_label,
-      y = y_label,
-      fill = "Category"
-    ) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+    theme(
+        axis.text.x = element_text(angle = 45, hjust = 1), 
+        axis.line = element_line(size = 1.5)
+      ) +
+      scale_fill_brewer(palette = "Accent") + 
+      labs(
+          title = title,
+          x = x_label,
+          y = y_label,
+          fill = "Category"
+  ) 
   
   # Add faceting if a facet variable is provided
   if (!is.null(facet_var)) {
@@ -182,10 +218,11 @@ create_proportional_plot <- function(data, group_var, fill_var, y_var, title, x_
 }
 ```
 
+#Do local Swiss people tend to own a house more than foreigners?
+
+From this chart, we can understand that local Swiss people tend to have a significantly higher rate of homeownership compared to foreigners. Specifically, Swiss individuals are more likely to own a house or a condominium/apartment (50.3% ownership), while foreigners overwhelmingly tend to rent (77.6%). This indicates a clear difference in housing patterns between Swiss nationals and foreigners.
 
 ```{r}
-# 8. Various summaries and plots
-# 8.1 Plot: Proportion of Homeownership by Nationality (SECCITIZENSHIP)
 plot1 <- create_proportional_plot(
   data = cleaned_data,
   group_var = "NATIONALITYCAT",
@@ -199,14 +236,15 @@ print(plot1)
 ```
 
 
+#What is the distribution of homeownership types by continent of nationality (excluding Switzerland, stateless individuals)?
+
+The chart highlights clear differences in home ownership patterns by continent. Individuals from EFTA countries are more likely to own homes compared to those from Africa, Asia, or Oceania, where tenancy is overwhelmingly common.
 ```{r}
 # 8.2 Example: Proportions by Continent of Nationality and Ownership
 plot2 <- create_proportional_plot(
   data = cleaned_data %>%
     filter(
-      !is.na(NATIONALITYCONTI) & 
-      !(NATIONALITYCONTI %in% c("Switzerland", NA, "Stateless")) & 
-      !is.na(TYPEOFOWNERSHIP)
+      !(NATIONALITYCONTI %in% c("Switzerland", NA, "Stateless")) 
     ),
   group_var = "NATIONALITYCONTI",
   fill_var = "TYPEOFOWNERSHIP",
@@ -217,6 +255,10 @@ plot2 <- create_proportional_plot(
 )
 print(plot2)
 ```
+
+
+#What is the proportion of different homeownership statuses for each citizenship group?
+
 
 ```{r}
 # 8.3 Plot: Proportion of Homeownership by Citizenship
@@ -232,6 +274,11 @@ plot1 <- create_proportional_plot(
 print(plot1)
 ```
 
+
+#How does homeownership differ by nationality  and household size?
+
+People with larger families tend to own a house more often, both among locals and foreigners.
+
 ```{r}
 # 8.4 Example of summarizing by household size
 plot3 <- create_proportional_plot(
@@ -246,3 +293,32 @@ plot3 <- create_proportional_plot(
 )
 print(plot3)
 ```
+
+
+
+
+
+
+
+-----------------------------------------------------------------
+
+Final Report: 
+
+Swiss nationals exhibit a significantly higher rate of home ownership compared to foreigners. This stark difference underscores the barriers that foreigners may face in entering the housing market, including legal, financial, and cultural factors.
+
+Foreign residents from EFTA countries demonstrate a significantly higher likelihood of owning homes. This trend may be attributed to similar economic conditions, cultural affinities, or easier access to financing within this group.
+
+In contrast, home ownership is much less common among individuals from Africa, Asia, or Oceania. This suggests potential economic or systemic challenges, such as lower income levels, limited access to credit, or administrative barriers that may disproportionately affect these groups.
+
+Household size significantly correlates with home ownership. Larger families, whether Swiss or foreign, are more likely to own homes, likely driven by the need for stability and larger living spaces. This trend suggests that housing policies should consider family size as a critical factor in housing assistance programs.
+
+
+Recommendations
+......................
+
+Policy Support for Foreign Residents: Implement targeted housing policies to facilitate foreign residents' access to home ownership, addressing financial and legal barriers.
+
+Encourage home ownership Among Larger Families: Provide incentives or assistance to larger families, who demonstrate a greater propensity to own homes.
+
+
+
