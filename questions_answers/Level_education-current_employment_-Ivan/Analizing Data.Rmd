@@ -1,259 +1,315 @@
+Question: How does education level vary with type of employment?
 
+Loading the libraries 
 ```{r}
 library(vcd)
 library(dplyr)
 library(ggplot2)
+library(RColorBrewer)
 ```
 
-
+Reading the data file
 ```{r}
 data <- read.csv("zp_merged_data.csv")
 ```
 
-
+Extracting only the necessary data
 ```{r}
-#26 variables
-selected_data <- data
+# I love Kuzu
+selected_data <- data %>% 
+  select(
+    -CURROCCUPATIONISCO, 
+    -HIGHESTCOMPLEDUAGGI, 
+    -CURRACTIVITY_HOME, 
+    -CURRACTIVITY_PART, 
+    -CURRACTIVITY_FULL
+  )
 head(selected_data)
 ```
-
-
-
 ```{r}
-
-edu_decode_Ja <- function(df, column_name) {
-  df %>%
-    mutate(!!sym(column_name) := case_when(
-      !!sym(column_name) == 0 ~ "Nein",
-      !!sym(column_name) == 1 ~ "Ja",
-      TRUE ~ as.character(!!sym(column_name))
-    ))
-}
-
-
-columns_to_decode <- c(
-                       "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
-                       "CURRACTIVITY_HOME","IN_EDUCATION")
-
-decoded_data <- data
-for (col in columns_to_decode) {
-  decoded_data <- edu_decode_Ja(decoded_data, col)
-}
-
-decoded_data <- decoded_data %>%
-  mutate(
-    employment_type = case_when(
-      CURRACTIVITY_FULL == "Ja" ~ "Full time",
-      CURRACTIVITY_PART == "Ja" ~ "Part time",
-      TRUE ~ "Unemployed"
-    )
-  )
-
-
+print(unique(selected_data$IN_EDUCATION))
 ```
 
-
-
-
+This code transforms a dataset by creating and modifying variables, making it ready for analysis
 ```{r}
-decoded_data <- decoded_data %>%
+decoded_data <- selected_data %>% 
   mutate(
-    CURRACTIVITYSTATUSIII = case_when(
-      CURRACTIVITYSTATUSIII == 1 ~ "Full-time (90-100%)",
-      CURRACTIVITYSTATUSIII == 2 ~ "Part-time I (70-89%)",
-      CURRACTIVITYSTATUSIII == 3 ~ "Part-time II (50-69%)",
-      CURRACTIVITYSTATUSIII == 4 ~ "Part-time III (<50%)",
-      CURRACTIVITYSTATUSIII == 5 ~ "Unemployed",
-      CURRACTIVITYSTATUSIII == 6 ~ "In training",
-      CURRACTIVITYSTATUSIII == 7 ~ "Housewoman/Houseman",
-      CURRACTIVITYSTATUSIII == 8 ~ "Retired",
-      CURRACTIVITYSTATUSIII == 9 ~ "Other non-working",
-      TRUE ~ as.factor(CURRACTIVITYSTATUSIII)
+    IN_EDUCATION = recode(as.factor(IN_EDUCATION),
+                          "0" = "Not In Education",
+                          "1" = "In Education"),
+                        
+      CURRACTIVITYSTATUSIII = case_when(
+      CURRACTIVITYSTATUSIII == "1" ~ "Full Time",
+      CURRACTIVITYSTATUSIII %in% c("2", "3", "4") ~ "Part Time",
+      TRUE ~ "Unemployed"
     ),
-    HIGHESTCOMPLEDU = case_when(
-      HIGHESTCOMPLEDU %in% c(1) ~ "No education",
-      HIGHESTCOMPLEDU %in% c(2, 3) ~ "School education",
-      HIGHESTCOMPLEDU %in% c(4, 5) ~ "College",
-      HIGHESTCOMPLEDU %in% c(6) ~ "Professional training",
-      HIGHESTCOMPLEDU %in% c(7, 8) ~ "Higher education (Bachelor/Master)",
-      HIGHESTCOMPLEDU %in% c(9, 10) ~ "Advanced education (Doctorate/Technical)",
-      TRUE ~ as.factor(HIGHESTCOMPLEDU)
-    ),
-    SEX = case_when(
-      SEX %in% c (1) ~ "Male",
-      SEX %in% c (2) ~ "Female",
-      TRUE ~ as.factor(SEX)
-    )
-  )
+    HIGHESTCOMPLEDU = recode(as.factor(HIGHESTCOMPLEDU),
+                             "1" = "None", 
+                             "2" = "Compulsory Education",
+                             "3" = "Compulsory Education", 
+                             "4" = "Secondary Schooling",
+                             "5" = "Secondary Schooling", 
+                             "6" = "Basic Vocational Education and Training", 
+                             "7" = "Secondary Schooling",
+                             "8" = "Secondary Schooling", 
+                             "9" = "Higher Vocational and Professional Education and Training", 
+                             "10" = "Higher Vocational and Professional Education and Training",
+                             "11" = "Universities and Higher Education Institutions", 
+                             "12" = "Universities and Higher Education Institutions",   
+                             "13" = "Universities and Higher Education Institutions"),
+    SEX = recode(as.factor(SEX),
+                 "2" = "Female",
+                 "1" = "Male")
+  ) %>%
+  mutate(Employment_Type = as.factor(CURRACTIVITYSTATUSIII))
+    
+    
+    
+
+decoded_data$AGE <- cut(selected_data$AGE,
+  breaks = c(15, 22, 29, 36, 43, 50, 57, Inf), 
+  right = FALSE, 
+  labels = as.factor(c("15-21", "22-28", "29-35", "36-42", "43-49", "50-56", "57+"))
+)
 ```
 
 
 ```{r}
 head(decoded_data)
 ```
+
+# Summary of missing values and levels
+
+This code checks the dataset for missing values (⁠ NA ⁠) in each column and identifies unused levels in factor variables, ensuring the data is clean and ready for analysis.
 ```{r}
 
-
-# Фильтрация недопустимых значений
-decoded_data <- decoded_data %>%
-  filter(HIGHESTCOMPLEDU %in% c("No education", 
-                                "School education", 
-                                "College", 
-                                "Professional training", 
-                                "Higher education (Bachelor/Master)", 
-                                "Advanced education (Doctorate/Technical)"))
-
-
-decoded_data <- decoded_data %>%
-  filter(if_all(everything(), ~ . != "-9" & . != "-10"))
-
-decoded_data <- decoded_data %>%
-  mutate(
-    CURRACTIVITYSTATUSIII = as.factor(CURRACTIVITYSTATUSIII),
-    CURRACTIVITY_FULL = as.factor(CURRACTIVITY_FULL),
-    CURRACTIVITY_PART = as.factor(CURRACTIVITY_PART),
-    CURRACTIVITY_HOME = as.factor(CURRACTIVITY_HOME),
-    IN_EDUCATION = as.factor(IN_EDUCATION),
-    HIGHESTCOMPLEDU = as.factor(HIGHESTCOMPLEDU),
-    HIGHESTCOMPLEDUAGGI = as.factor(HIGHESTCOMPLEDUAGGI),
-    AGE = as.factor(AGE),
-    SEX = as.factor(SEX),
-    employment_type = as.factor(employment_type)
+summary_cleaned_data <- lapply(decoded_data, function(x) {
+  list(
+    MissingValues = sum(is.na(x)),
+    Levels = if (is.factor(x)) levels(x) else NULL
   )
-decoded_data$HIGHESTCOMPLEDU <- factor(decoded_data$HIGHESTCOMPLEDU, levels = c(
-  "No education",
-  "School education",
-  "College",
-  "Professional training",
-  "Higher education (Bachelor/Master)",
-  "Advanced education (Doctorate/Technical)"
-))
+})
+print(summary_cleaned_data)
 str(decoded_data)
 ```
 
 
+#Filter and Clean Data 
+
+This code filters out invalid and missing values  and drops unused factor levels.The result is stored in cleaned_data for analysis.
+
 ```{r}
-decoded_data <- decoded_data %>%
-  filter(!CURRACTIVITYSTATUSIII %in% c("Andere Nichterwerbspersonen", "In Ausbildung", "Rentner/innen"))
-levels(decoded_data$CURRACTIVITYSTATUSIII)
+
+clean_data <- decoded_data %>%
+  mutate(across(where(is.factor), as.character)) %>%
+  filter(if_all(everything(), ~ . != "-9" & . != "-10" & !is.na(.))) %>%
+  mutate(across(where(is.character), as.factor))
 ```
 
-
-
 ```{r}
-employment_type_data <- decoded_data %>%
-  filter(!is.na(HIGHESTCOMPLEDU)) %>%
-  mutate(employment_type = case_when(
-    CURRACTIVITY_FULL == "Ja" ~ "Full time",
-    CURRACTIVITY_PART == "Ja" ~ "Part time",
-    TRUE ~ "Unemployed"
-  )) %>%
-  group_by(HIGHESTCOMPLEDU, employment_type) %>%
-  summarise(count = n()) %>%
-  mutate(percentage = count / sum(count) * 100)
+str(clean_data)
+```
 
-ggplot(employment_type_data, aes(x = HIGHESTCOMPLEDU, y = percentage, fill = employment_type)) +
-  geom_bar(stat = "identity", position = "fill") +  
-  geom_text(
-    aes(
-      label = sprintf("%.1f%%", percentage),
-      group = employment_type
-    ),
-    position = position_fill(vjust = 0.5),
-    size = 3
-  ) +
-  labs(
-    title = "Distribution of employment types by education level",
-    x = "Education Level",
-    y = "Percent",
-    fill = "Type of employment"
-  ) +
+---------------------------------------------------------------------------------
+Plots
+ 
+ 
+1.The most frequent education/employment level
   
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
+What is the most commonly completed education level and the most common employment type among different generations?
 
-
+-Basic Vocational Education and Training" is the most commonly completed education level among the population.
 
 
 ```{r}
-# Рассчёт percentage
-education_type_data <- decoded_data %>%
-  group_by(employment_type, IN_EDUCATION) %>%
-    summarise(count = n(), .groups = "drop") %>%
-      mutate(percentage = count / sum(count) * 100)
+heatmap_data <- clean_data %>%
+  count(AGE, HIGHESTCOMPLEDU)
 
-# Построение графика
-ggplot(education_type_data, aes(x = employment_type, y = percentage, fill = IN_EDUCATION)) +
-  geom_bar(stat = "identity", position = "stack") +  
-  geom_text(
-    aes(label = sprintf("%.1f%%", percentage)),
-    position = position_stack(vjust = 0.5),
-    size = 3
-  ) +
+ggplot(heatmap_data %>% 
+         mutate(
+           HIGHESTCOMPLEDU = factor(
+             HIGHESTCOMPLEDU,
+             levels = c(
+               "None",
+               "Compulsory Education",
+               "Secondary Schooling",
+               "Basic Vocational Education and Training",
+               "Higher Vocational and Professional Education and Training",
+               "Universities and Higher Education Institutions"
+             )
+           )
+         ), aes(x = AGE, y = HIGHESTCOMPLEDU, fill = n)) +
+  geom_tile(color = "black") + 
+  scale_fill_distiller(palette = "Reds", direction = 1) +
   labs(
-    title = "Distribution of education status by highest education level",
-    x = "Highest Education Level",
-    y = "Percent",
-    fill = "Education is ongoing"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-```{r}
-# Пример: сгруппированные столбики 
-# employment_type ~ HIGHESTCOMPLEDU, сгруппировано по SEX
-# Сначала сформируем суммарные данные:
-
-grouped_data <- decoded_data %>%
-  filter(!is.na(HIGHESTCOMPLEDU), !is.na(SEX)) %>%
-  group_by(HIGHESTCOMPLEDU, SEX, employment_type) %>%
-  summarise(count = n(), .groups = "drop") %>%
-  mutate(percentage = count / sum(count) * 100)
-
-# Построим сгруппированную диаграмму
-ggplot(grouped_data, aes(x = HIGHESTCOMPLEDU, y = percentage, fill = employment_type)) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
-  facet_wrap(~ SEX) + 
-  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
-  labs(
-    title = "Employment type by education level, grouped by sex",
-    x = "Highest Education Level",
-    y = "Percent",
-    fill = "Type of employment"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-```{r}
-
-# Пример: убедимся, что AGE - это числовая переменная
-decoded_data <- decoded_data %>%
-  mutate(AGE = as.numeric(as.character(AGE)))  # если фактически хранилась как factor/character
-
-# Теперь строим boxplot
-ggplot(decoded_data, aes(
-  x = HIGHESTCOMPLEDU,
-  y = AGE,
-  fill = employment_type
-)) +
-  # Если хотим, чтобы для каждого уровня образования было по несколько боксов (Full time / Part time / Unemployed),
-  # указываем group = interaction(HIGHESTCOMPLEDU, employment_type) и сдвигаем боксы:
-  geom_boxplot(
-    position = position_dodge(width = 0.9),
-    aes(group = interaction(HIGHESTCOMPLEDU, employment_type))
-  ) +
-  labs(
-    title = "Age distribution by education level and employment type",
-    x = "Highest Education Level",
-    y = "Age",
-    fill = "Employment Type"
+    title = "Age Group and Education Level",
+    x = "Age Group",
+    y = "Education Level",
+    fill = "Frequency"
   ) +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1)
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.line = element_line(color = "black", size = 1.5), 
+    panel.grid = element_blank() 
   )
+```
+ 
+-People start to concentrate on work when they reach 30 Year Age.
+-People mostly prefer to work Full-Time
+```{r}
+heatmap_data <- clean_data %>%
+  count(AGE, Employment_Type)
+
+ggplot(heatmap_data, aes(x = AGE, y = Employment_Type, fill = n)) +
+  geom_tile(color = "black") + 
+  scale_fill_distiller(palette = "Reds", direction = 1) +
+  labs(
+    title = "Age Group and Employment Type",
+    x = "Age Group",
+    y = "Employment Type",
+    fill = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.line = element_line(color = "black", size = 1.5), 
+    panel.grid = element_blank() 
+  )
+```
+ 
+ 
+ 
+ 
+ 2. Gender and employment
+ 
+```{r}
+clean_data <- clean_data %>%
+    rename(Gender = SEX)
+
+ggplot(clean_data, aes(x = Employment_Type, fill = Gender)) +
+  geom_bar(position = "fill") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    axis.line = element_line(size = 1.5)
+  ) +
+  scale_fill_brewer(palette = "Set2") + 
+  labs(
+    title = "Distribution of Gender by Employment Type",
+    x = "Employment Type",
+    y = "Percent"
+  ) + coord_flip()
+```
+
+
+ 
+3. Analyzing the people on education
+
+  - What proportion of individuals in each age group are still in education?
+  
+It appears that people tend to stop pursuing education after the age of 22, shifting their focus to work. This pattern is evident in the decreasing proportion of individuals in education as the age group increases.
+
+```{r}
+
+clean_data %>%
+  ggplot(aes(x = AGE, fill = IN_EDUCATION)) +
+  geom_bar(position = "fill") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    axis.line = element_line(size = 1.5)
+  ) +
+  scale_fill_brewer(palette = "Set2") + 
+  labs(
+    title = "Age Group and Education Status",
+    x = "Age",
+    y = "Proportion",
+    fill = "Education Status"
+  ) + 
+  coord_flip()
+  
+```
+
+ - How does the highest education level affect continuing education? After which education level and at what age do people tend to stop education and focus on working?
+
+
+```{r}
+
+ggplot(clean_data %>% 
+         mutate(
+           HIGHESTCOMPLEDU = factor(
+             HIGHESTCOMPLEDU,
+             levels = c(
+               "None",
+               "Compulsory Education",
+               "Secondary Schooling",
+               "Basic Vocational Education and Training",
+               "Higher Vocational and Professional Education and Training",
+               "Universities and Higher Education Institutions"
+             )
+           )
+         ),
+       aes(x = HIGHESTCOMPLEDU, fill = IN_EDUCATION)) +
+  geom_bar(position = "fill") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.line = element_line(size = 1.5)
+  ) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Proportion of Education Status by Highest Education Level",
+    x = "Highest Education Level",
+    y = "Proportion",
+    fill = "Education Status"
+  ) +
+  coord_flip()
+```
+
+ 
+ 
+ 4.Employment and Education:
+
+What percentage of individuals in education are employed full-time, part-time, or unemployed?
+- The graph largely confirms the hypothesis that a higher level of education is associated with a higher probability of having Full-time employment and a lower probability of being unemployed.
+
+```{r}
+
+
+
+ggplot(clean_data %>% 
+         mutate(
+           HIGHESTCOMPLEDU = factor(
+             HIGHESTCOMPLEDU,
+             levels = c(
+               "None",
+               "Compulsory Education",
+               "Secondary Schooling",
+               "Basic Vocational Education and Training",
+               "Higher Vocational and Professional Education and Training",
+               "Universities and Higher Education Institutions"
+             )
+           )
+         ) ,aes(x = HIGHESTCOMPLEDU, fill = Employment_Type)) +
+  geom_bar(position = "fill") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    axis.line = element_line(size = 1.5)
+  ) +
+  scale_fill_brewer(palette = "Set2") + 
+  labs(
+    title = "Distribution of Employment Types by Education Level",
+    x = "Education Level",
+    y = "Proportion"
+  ) +
+  coord_flip()
 ```
 
 
 
+
+-------------------------------------------------------------------------------------------------------------
+The correlation between level of Education and Employment type
+-------------------------------------------------------------------------------------------------------------
+
+The analysis highlights a strong correlation between education level and employment type. Higher education is associated with significantly better employment outcomes, particularly in securing full-time jobs and reducing the risk of unemployment. Policymakers and educators should focus on enhancing access to education and aligning training programs with workforce demands to ensure economic stability for individuals across all education levels.
+
+As the younger generation increasingly prioritizes higher education, this trend suggests they are likely to secure more stable jobs and experience lower unemployment rates in the future. This aligns with Switzerland's substantial financial support for individuals pursuing higher education, reflecting the country's commitment to fostering a highly educated workforce and ensuring long-term economic stability.
