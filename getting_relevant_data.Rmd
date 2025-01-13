@@ -45,17 +45,21 @@ sheet_names <- lapply(all_data, names) # sheet names in each file
 
 
 ```{r}
-variables_zp <- c( "CURRACTIVITYSTATUSIII",
+variables_zp <- c("HOUSEHOLDYEARLYID", "SECCITIZ", "SECCITIZENSHIP",
+                  "NATIONALITYCAT", "NATIONALITYCONTI","TIMEWORKEDPERWEEKSUM", "RESIDENTPERMIT","CURRACTIVITYSTATUSIII",
                        "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
                        "CURRACTIVITY_HOME","IN_EDUCATION",
-                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI","AGE","SEX","CURROCCUPATIONISCO"
-                   )
-
+                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI","AGE","SEX","CURROCCUPATIONISCO")
+variables_hh <- c("HOUSEHOLDYEARLYID", "TYPEOFOWNERSHIP","SIZEOFPRIVATEHOUSEHOLD","RENTNET")
+variables_list <- unique(c(variables_zp, variables_hh))
 ```
 
 ```{r}
-path_save = "questions_answers/Level_education-current_employment_-Ivan/"
-
+path_save = "questions_answers/nationality_econ_status/"
+saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
+saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
+saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
+# saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
 ```
 
 ```{r}
@@ -96,5 +100,9 @@ saveRDS(result_df, paste0(path_save,"variables_zp.rds"))
 print(result_df)
 ```
 
-
-
+```{r}
+vis_value(result_df)
+```
+```{r}
+result_df %>% filter(`do-d-40-se_user-syn-2020.xlsx` == 0) %>% rownames(.)
+```

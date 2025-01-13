@@ -1,0 +1,299 @@
+---
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+---
+# Question : What are the ownership types for different nationalities?
+
+
+## Prepareing data
+
+**Load Libraries for Data Manipulation and Plotting**
+```{r}
+library(dplyr)    
+library(tidyr)
+library(ggplot2)   
+```
+
+**Read initial data**
+```{r}
+zp_merged_data <- read.csv("zp_merged_data.csv")
+hh_merged_data <- read.csv("hh_merged_data.csv")
+```
+
+
+**Define a custom decode function**
+```{r}
+decode <- function(df, var, decode_mapping) {
+  # Convert the keys in the list to text
+  for (key in names(decode_mapping)) {
+    value <- decode_mapping[[key]]
+    df <- df %>%
+      mutate({{ var }} := case_match(
+        as.character({{ var }}),   
+        key ~ value,                
+        .default = as.character({{ var }}) 
+      ))
+  }
+  return(df)
+}
+```
+
+
+**Merge the datasets and select relevant columns**
+```{r}
+merged_data <- zp_merged_data %>%
+  left_join(
+    hh_merged_data, 
+    by = c("HOUSEHOLDYEARLYID" = "HOUSEHOLDYEARLYID", "YEAR_QUIZ" = "YEAR_QUIZ")
+  ) %>%
+  select(
+    HOUSEHOLDYEARLYID, 
+    SECCITIZENSHIP, 
+    TYPEOFOWNERSHIP,
+    SIZEOFPRIVATEHOUSEHOLD,
+    NATIONALITYCAT, 
+    NATIONALITYCONTI
+  )
+```
+
+**Decoding Data**
+
+```{r}
+cleaned_data <- merged_data %>%
+  filter(
+    !is.na(NATIONALITYCAT),
+    !is.na(SIZEOFPRIVATEHOUSEHOLD),
+    !is.na(TYPEOFOWNERSHIP)
+  )
+
+# Decode fields
+cleaned_data <- decode(cleaned_data, SECCITIZENSHIP, list(
+  "1" = "No",
+  "2" = "Yes",
+  "-6" = NA,
+  "-8" = NA,
+  "-9" = NA
+))
+
+cleaned_data <- decode(cleaned_data, TYPEOFOWNERSHIP, list(
+  "1" = "Tenant or subtenant",
+  "2" = "Cooperative member",
+  "3" = "Condominium/apartment owner",
+  "4" = "Owner of the house",
+  "5" = "Other situation",
+  "-9" = NA
+))
+
+cleaned_data <- decode(cleaned_data, NATIONALITYCAT, list(
+  "1" = "Swiss",
+  "2" = "Foreigner",
+  "-8" = NA,
+  "-9" = NA
+))
+
+cleaned_data <- decode(cleaned_data, NATIONALITYCONTI, list(
+  "1" = "Switzerland",
+  "2" = "Member State of the European Union (EU)",
+  "3" = "Member state of EFTA",
+  "4" = "Other European country",
+  "5" = "Africa",
+  "6" = "North America",
+  "7" = "Latin America and the Caribbean",
+  "8" = "Asia",
+  "9" = "Oceania",
+  "-1" = "Stateless",
+  "-6" = NA,
+  "-8" = NA,
+  "-9" = NA
+))
+```
+
+
+
+```{r}
+
+cleaned_data <- cleaned_data %>%
+  mutate(TYPEOFOWNERSHIP = ifelse(is.na(TYPEOFOWNERSHIP), NA, TYPEOFOWNERSHIP))
+
+# Convert SECCITIZENSHIP to character, remove "NA" literal if present
+cleaned_data <- cleaned_data %>%
+  mutate(
+    SECCITIZENSHIP = as.character(SECCITIZENSHIP),
+    SECCITIZENSHIP = na_if(SECCITIZENSHIP, "NA")
+  )
+
+# Define homeownership (Owner vs. Renter)
+cleaned_data <- cleaned_data %>%
+  mutate(HOMEOWNERSHIP = case_when(
+    TYPEOFOWNERSHIP %in% c("Condominium/apartment owner", "Owner of the house") ~ "Owner",
+    TYPEOFOWNERSHIP %in% c("Tenant or subtenant", "Other situation") ~ "Renter",
+    TRUE ~ NA_character_
+  ))
+
+
+```
+
+
+
+**Group household size**
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(
+    SIZEOFPRIVATEHOUSEHOLD_GROUP = case_when(
+      SIZEOFPRIVATEHOUSEHOLD == 1 ~ "1 member",
+      SIZEOFPRIVATEHOUSEHOLD >= 2 & SIZEOFPRIVATEHOUSEHOLD <= 3 ~ "2-3 members",
+      SIZEOFPRIVATEHOUSEHOLD >= 4 ~ "4+ members",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(SIZEOFPRIVATEHOUSEHOLD_GROUP))
+```
+
+
+## Plots
+
+
+**Create the base plot**
+
+```{r}
+create_proportional_plot <- function(data, group_var, fill_var, y_var, title, x_label, y_label, facet_var = NULL) {
+  summarized_data <- data %>%
+    group_by(across(all_of(c(group_var, fill_var, facet_var)))) %>%
+    summarise(count = n(), .groups = "drop") %>%
+    group_by(across(all_of(c(group_var, facet_var)))) %>%
+    mutate(proportion = count / sum(count) * 100)
+  
+  plot <- ggplot(summarized_data, aes_string(x = group_var, y = "proportion", fill = fill_var)) +
+    geom_bar(stat = "identity", position = "fill") +
+    geom_text(
+      aes(label = sprintf("%.1f%%", proportion)), 
+      position = position_fill(vjust = 0.5),
+      size = 3,
+      color = "black"
+    ) +
+    scale_y_continuous(labels = scales::percent) + 
+
+    theme(
+        axis.text.x = element_text(angle = 45, hjust = 1), 
+        axis.line = element_line(size = 1.5)
+      ) +
+      scale_fill_brewer(palette = "Accent") + 
+      labs(
+          title = title,
+          x = x_label,
+          y = y_label,
+          fill = "Category"
+  ) 
+  
+  if (!is.null(facet_var)) {
+    plot <- plot + facet_wrap(as.formula(paste("~", facet_var)))
+  }
+  
+  return(plot)
+}
+```
+
+**Do local Swiss people tend to own a house more than foreigners?**
+
+```{r, warning=FALSE}
+plot1 <- create_proportional_plot(
+  data = cleaned_data,
+  group_var = "NATIONALITYCAT",
+  fill_var = "TYPEOFOWNERSHIP",
+  y_var = "proportion",
+  title = "Proportion of Homeownership by Nationality",
+  x_label = "Nationality",
+  y_label = "Proportion"
+)
+print(plot1)
+```
+
+**From this chart, we can understand that local Swiss people tend to have a significantly higher rate of homeownership compared to foreigners. Specifically, Swiss individuals are more likely to own a house or a condominium/apartment (50.3% ownership), while foreigners overwhelmingly tend to rent (77.6%). This indicates a clear difference in housing patterns between Swiss nationals and foreigners.**
+
+
+
+**What is the distribution of homeownership types by continent of nationality (excluding Switzerland, stateless individuals)?**
+```{r}
+# 8.2 Example: Proportions by Continent of Nationality and Ownership
+plot2 <- create_proportional_plot(
+  data = cleaned_data %>%
+    filter(
+      !(NATIONALITYCONTI %in% c("Switzerland", NA, "Stateless")) 
+    ),
+  group_var = "NATIONALITYCONTI",
+  fill_var = "TYPEOFOWNERSHIP",
+  y_var = "proportion",
+  title = "Homeownership by Continent",
+  x_label = "Continent of Nationality",
+  y_label = "Proportion"
+)
+print(plot2)
+```
+**The chart highlights clear differences in home ownership patterns by continent. Individuals from EFTA countries are more likely to own homes compared to those from Africa, Asia, or Oceania, where tenancy is overwhelmingly common.**
+
+**What is the proportion of different ownership statuses for people who had or did not have more than one passport?**
+
+```{r}
+# 8.3 Plot: Proportion of Homeownership by Citizenship
+plot1 <- create_proportional_plot(
+  data = cleaned_data,
+  group_var = "SECCITIZENSHIP",
+  fill_var = "HOMEOWNERSHIP",
+  y_var = "proportion",
+  title = "Types of Ownership Among People with Multiple Passports",
+  x_label = "Had Multiple Passport",
+  y_label = "Proportion"
+)
+print(plot1)
+```
+**From this chart, we can see that people with more than one passport are more likely to own property rather than rent.
+
+**How does homeownership differ by nationality  and household size?**
+
+
+```{r}
+# 8.4 Example of summarizing by household size
+plot3 <- create_proportional_plot(
+  data = cleaned_data, 
+  group_var = "NATIONALITYCAT",
+  fill_var = "HOMEOWNERSHIP",
+  y_var = "proportion", 
+  title = "Homeownership by Nationality and Household Size",
+  x_label = "Nationality",
+  y_label = "Proportion",
+  facet_var = "SIZEOFPRIVATEHOUSEHOLD_GROUP"
+)
+print(plot3)
+```
+
+
+**People with larger families tend to own a house more often, both among locals and foreigners.**
+
+
+
+
+
+
+## Answer to question
+
+- Swiss nationals exhibit a significantly higher rate of home ownership compared to foreigners. This stark difference underscores the barriers that foreigners may face in entering the housing market, including legal, financial, and cultural factors.
+
+- Foreign residents from EFTA countries demonstrate a significantly higher likelihood of owning homes. This trend may be attributed to similar economic conditions, cultural affinities, or easier access to financing within this group.
+
+- In contrast, home ownership is much less common among individuals from Africa, Asia, or Oceania. This suggests potential economic or systemic challenges, such as lower income levels, limited access to credit, or administrative barriers that may disproportionately affect these groups.
+
+- Household size significantly correlates with home ownership. Larger families, whether Swiss or foreign, are more likely to own homes, likely driven by the need for stability and larger living spaces. This trend suggests that housing policies should consider family size as a critical factor in housing assistance programs.
+
+
+**Recommendations**
+
+- Policy Support for Foreign Residents: Implement targeted housing policies to facilitate foreign residents' access to home ownership, addressing financial and legal barriers.
+
+- Encourage home ownership Among Larger Families: Provide incentives or assistance to larger families, who demonstrate a greater propensity to own homes.
+
+
+
