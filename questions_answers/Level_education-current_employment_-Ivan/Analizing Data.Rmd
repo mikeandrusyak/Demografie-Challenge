@@ -1,21 +1,29 @@
-Question: How does education level vary with type of employment?
-------------------------------------------------------------------
+---
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+---
+# Question: How does education level vary with type of employment?
 
 
+## Prepare data
 
-# Loading the libraries 
-```{r}
+**Loading the libraries**
+```{r, message=FALSE}
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 ```
 
-# Reading the data file
+**Reading the data file**
 ```{r}
 data <- read.csv("zp_merged_data.csv")
 ```
 
-Extracting only the necessary data
+**Extracting only the necessary data**
 ```{r}
 selected_data <- data %>% 
   select(
@@ -28,8 +36,9 @@ selected_data <- data %>%
 head(selected_data)
 ```
 
+### Decoding the data
 
-This code transforms a dataset by creating and modifying variables, making it ready for analysis
+**This code transforms a dataset by creating and modifying variables, making it ready for analysis**
 ```{r}
 decoded_data <- selected_data %>% 
   mutate(
@@ -37,32 +46,30 @@ decoded_data <- selected_data %>%
                           "0" = "Not In Education",
                           "1" = "In Education"),
                         
-      CURRACTIVITYSTATUSIII = case_when(
+    CURRACTIVITYSTATUSIII = case_when(
       CURRACTIVITYSTATUSIII == "1" ~ "Full Time",
       CURRACTIVITYSTATUSIII %in% c("2", "3", "4") ~ "Part Time",
       TRUE ~ "Unemployed"
     ),
+    
     HIGHESTCOMPLEDU = recode(as.factor(HIGHESTCOMPLEDU),
                              "1" = "None", 
-                             "2" = "Compulsory Education",
-                             "3" = "Compulsory Education", 
-                             "4" = "Secondary Schooling",
-                             "5" = "Secondary Schooling", 
-                             "6" = "Basic Vocational Education and Training", 
-                             "7" = "Secondary Schooling",
-                             "8" = "Secondary Schooling", 
-                             "9" = "Higher Vocational and Professional Education and Training", 
-                             "10" = "Higher Vocational and Professional Education and Training",
-                             "11" = "Universities and Higher Education Institutions", 
-                             "12" = "Universities and Higher Education Institutions",   
-                             "13" = "Universities and Higher Education Institutions"),
-    SEX = recode(as.factor(SEX),
-                 "2" = "Female",
-                 "1" = "Male")
-  ) %>%
+                             "2" = "Compulsory", 
+                             "3" = "Compulsory", 
+                             "4" = "Secondary",
+                             "5" = "Secondary", 
+                             "6" = "Basic VET", 
+                             "7" = "Secondary",
+                             "8" = "Secondary", 
+                             "9" = "Higher VET", 
+                             "10" = "Higher VET",
+                             "11" = "Higher Ed", 
+                             "12" = "Higher Ed",   
+                             "13" = "Higher Ed"
+    )
+  ) %>% 
   mutate(Employment_Type = as.factor(CURRACTIVITYSTATUSIII))
-    
-    
+
     
 
 decoded_data$AGE <- cut(
@@ -75,13 +82,8 @@ decoded_data$AGE <- cut(
 ```
 
 
-```{r}
-head(decoded_data)
-```
+**Summary of missing values and levels**
 
-# Summary of missing values and levels
-
-This code checks the dataset for missing values (⁠ NA ⁠) in each column and identifies unused levels in factor variables, ensuring the data is clean and ready for analysis.
 ```{r}
 
 summary_cleaned_data <- lapply(decoded_data, function(x) {
@@ -95,9 +97,9 @@ str(decoded_data)
 ```
 
  
-# Filter and Clean Data 
+### Filter and Clean Data 
 
-This code filters out invalid and missing values  and drops unused factor levels.The result is stored in cleaned_data for analysis.
+**This code filters out invalid and missing values  and drops unused factor levels.The result is stored in cleaned_data for analysis.**
 
 ```{r}
 
@@ -107,38 +109,24 @@ clean_data <- decoded_data %>%
   mutate(across(where(is.character), as.factor))
 ```
 
+**checking variables**
 ```{r}
 str(clean_data)
 ```
 
----------------------------------------------------------------------------------
-Plots
- 
- 
-1.The most frequent education/employment level
-  
-What is the most commonly completed education level and the most common employment type among different generations?
 
--Basic Vocational Education and Training is the most commonly completed education level across all age groups. However, younger generations tend to focus more on pursuing higher education, reflecting a shift towards advanced qualifications in recent years.
+## Plots
+
+ 
+### The most frequent education/employment level
+  
+**What is the most commonly completed education level and the most common employment type among different generations?**
+
 
 ```{r}
 heatmap_data <- clean_data %>%
   count(AGE, HIGHESTCOMPLEDU)
-
-ggplot(heatmap_data %>% 
-         mutate(
-           HIGHESTCOMPLEDU = factor(
-             HIGHESTCOMPLEDU,
-             levels = c(
-               "None",
-               "Compulsory Education",
-               "Secondary Schooling",
-               "Basic Vocational Education and Training",
-               "Higher Vocational and Professional Education and Training",
-               "Universities and Higher Education Institutions"
-             )
-           )
-         ), aes(x = AGE, y = HIGHESTCOMPLEDU, fill = n)) +
+ggplot(heatmap_data, aes(x = AGE, y = HIGHESTCOMPLEDU, fill = n)) +
   geom_tile(color = "black") + 
   scale_fill_distiller(palette = "GnBu", direction = 1) +
   labs(
@@ -151,14 +139,13 @@ ggplot(heatmap_data %>%
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     axis.line = element_line(color = "black", size = 1.5), 
-    panel.grid = element_blank() 
+    panel.grid = element_blank()
   )
 ```
+
+**Basic Vocational Education and Training is the most commonly completed education level across all age groups. However, younger generations tend to focus more on pursuing higher education, reflecting a shift towards advanced qualifications in recent years.**
  
- 
- 
--People start to concentrate on work when they reach 30 Year Age.
--People mostly prefer to work Full-Time
+
 ```{r}
 heatmap_data <- clean_data %>%
   count(AGE, Employment_Type)
@@ -179,39 +166,16 @@ ggplot(heatmap_data, aes(x = AGE, y = Employment_Type, fill = n)) +
     panel.grid = element_blank() 
   )
 ```
- 
- 
- 
- 
- 2. Gender and employment
- 
--Men more likely in full-time work, women concentrated in part-time roles, and a relatively balanced but slightly higher unemployment rate among men.
-```{r}
-clean_data <- clean_data %>%
-    rename(Gender = SEX)
+  
+**People start to concentrate on work when they reach 30 Year Age.**
 
-ggplot(clean_data, aes(x = Employment_Type, fill = Gender)) +
-  geom_bar(position = "fill") +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), 
-    axis.line = element_line(size = 1.5)
-  ) +
-  scale_fill_brewer(palette = "Set2") + 
-  labs(
-    title = "Distribution of Gender by Employment Type",
-    x = "Employment Type",
-    y = "Percent"
-  ) + coord_flip()
-```
-
-
+**People mostly prefer to work Full-Time**
  
-3. Analyzing the people on education
+---
 
-- What proportion of individuals in each age group are still in education?
+### Analyzing the people on education
 
-A significant portion of younger individuals are still engaged in continuing education. After the age of 30, most individuals are no longer in education, having completed their formal studies earlier in life.
-
+**What proportion of individuals in each age group are still in education?**
 
 ```{r}
 
@@ -233,35 +197,17 @@ clean_data %>%
   coord_flip()
   
 ```
+**A significant portion of younger individuals are still engaged in continuing education. After the age of 30, most individuals are no longer in education, having completed their formal studies earlier in life.**
 
-
+---
  
  
- 4.Employment and Education:
+### Employment and Education:
 
--What percentage of individuals in education are employed full-time, part-time, or unemployed?
-
-As the age group increases, the unemployment rate decreases, and the Full-Time employment rate rises.
-
-Higher education levels increase employment rates and reduce unemployment.
-
-Part-Time employment is more common, especially among older age groups and at certain education levels.
+**What percentage of individuals in education are employed full-time, part-time, or unemployed?**
 
 ```{r}
-ggplot(clean_data %>% 
-         mutate(
-           HIGHESTCOMPLEDU = factor(
-             HIGHESTCOMPLEDU,
-             levels = c(
-               "None",
-               "Compulsory Education",
-               "Secondary Schooling",
-               "Basic Vocational Education and Training",
-               "Higher Vocational and Professional Education and Training",
-               "Universities and Higher Education Institutions"
-             )
-           )
-         ), aes(x = HIGHESTCOMPLEDU, fill = Employment_Type)) +
+ggplot(clean_data,  aes(x = HIGHESTCOMPLEDU, fill = Employment_Type)) +
   geom_bar(position = "fill") +
   facet_wrap(~AGE) +
   theme(
@@ -274,35 +220,41 @@ ggplot(clean_data %>%
     x = "Education Level",
     y = "Proportion"
   ) 
-
 ```
 
+**As the age group increases, the unemployment rate decreases, and the Full-Time employment rate rises.**
+
+**Higher education levels increase employment rates and reduce unemployment.**
+
+**Part-Time employment is more common, especially among older age groups and at certain education levels.**
+
+---
+
+## Answer to Question
+
+
+**1. Link Between Education Level and Employment**
+
+There is a clear link between education level and employment type. **People with higher education are more likely to get full-time jobs and are less likely to be unemployed.**
 
 
 
+**2. Employment Patterns for People in Education**
 
--------------------------------------------------------------------------------------------------------------
-The correlation between level of Education and Employment type
--------------------------------------------------------------------------------------------------------------
+- **Full-Time Jobs:** As people get older, the number of those with full-time jobs increases.
+- **Part-Time Jobs:** Part-time work is more common, especially for older people and those studying while working.
+- **Unemployment:** Unemployment is higher among young people and those with lower education. However, it decreases as they grow older and finish more education.
 
-1. Link Between Education Level and Employment
-""""""""""""""""""""""""""""""""""""""""""""""
-There is a clear link between education level and employment type. People with higher education are more likely to get full-time jobs and are less likely to be unemployed.
 
-2. Employment Patterns for People in Education
-""""""""""""""""""""""""""""""""""""""""""""""
 
-Full-Time Jobs: As people get older, the number of those with full-time jobs increases.
-Part-Time Jobs: Part-time work is more common, especially for older people and those studying while working.
-Unemployment: Unemployment is higher among young people and those with lower education. However, it decreases as they grow older and finish more education.
+**3. The Future for Younger Generations**
 
-3. The Future for Younger Generations
-""""""""""""""""""""""""""""""""""""""""""""""
 Young people are focusing more on higher education. This will likely help them get better jobs and avoid unemployment in the future. Switzerland supports this trend by providing financial help for people in higher education, showing its dedication to building a well-educated workforce.
 
 
-4. Key Points
-""""""""""""""""""""""""""""""""""""""""""""""
-Higher education helps people find jobs and lowers unemployment.
-Governments should create ways for young people to combine education with part-time jobs.
-Supporting education will keep Switzerland’s economy strong in the future.
+
+**4. Key Points**
+
+> **Higher education helps people find jobs and lowers unemployment.**  
+> **Governments should create ways for young people to combine education with part-time jobs.**  
+> **Supporting education will keep Switzerland’s economy strong in the future.**
