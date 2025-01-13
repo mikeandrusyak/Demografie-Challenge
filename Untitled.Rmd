@@ -1,0 +1,17 @@
+
+
+```{r}
+library(rpart)
+library(rpart.plot)
+data("iris")
+```
+
+```{r}
+tree_model <- rpart(Species ~ ., data = iris,
+                    control = rpart.control(
+                      minsplit = 10,
+                      minbucket = 5,    
+                      maxdepth = 3,     
+                      cp = 0.01           
+                    ))
+```

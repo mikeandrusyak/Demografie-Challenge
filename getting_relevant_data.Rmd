@@ -25,7 +25,7 @@ read_excel_data <- function(file_path) {
 folder_path <- "data/strukturerhebung/"
 
 # Get all Excel files in the folder that match the pattern
-file_pattern <- "do-d-40-se_user-syn-(201[0-9]|2020|2021)\\.xls"
+file_pattern <- "do-d-40-se_user-syn-(201[0-9])\\.xls"
 file_names <- list.files(folder_path, pattern = file_pattern, full.names = TRUE, recursive = TRUE)
 file_names <- file_names[!grepl("^~\\$", basename(file_names))]  # Exclude temporary files
 ```
@@ -46,7 +46,10 @@ sheet_names <- lapply(all_data, names) # sheet names in each file
 
 ```{r}
 variables_zp <- c("HOUSEHOLDYEARLYID", "SECCITIZ", "SECCITIZENSHIP",
-                  "NATIONALITYCAT", "NATIONALITYCONTI","TIMEWORKEDPERWEEKSUM", "RESIDENTPERMIT")
+                  "NATIONALITYCAT", "NATIONALITYCONTI","TIMEWORKEDPERWEEKSUM", "RESIDENTPERMIT","CURRACTIVITYSTATUSIII",
+                       "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
+                       "CURRACTIVITY_HOME","IN_EDUCATION",
+                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI","AGE","SEX","CURROCCUPATIONISCO")
 variables_hh <- c("HOUSEHOLDYEARLYID", "TYPEOFOWNERSHIP","SIZEOFPRIVATEHOUSEHOLD","RENTNET")
 variables_list <- unique(c(variables_zp, variables_hh))
 ```
@@ -61,8 +64,8 @@ saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
 
 ```{r}
 # Create an empty data frame to store results with variables as row names
-result_df <- data.frame(matrix(0, nrow = length(variables_list), ncol = length(file_names)),
-                        row.names = variables_list)
+result_df <- data.frame(matrix(0, nrow = length(variables_zp), ncol = length(file_names)),
+                        row.names = variables_zp)
 colnames(result_df) <- file_names
 
 # Check if each variable is found in any sheet of each file
@@ -92,7 +95,7 @@ for (file in file_names) {
 ```{r}
 # Convert the matrix to a DataFrame for convenience
 result_df <- as.data.frame(result_df)
-
+saveRDS(result_df, paste0(path_save,"variables_zp.rds"))
 # Output the result
 print(result_df)
 ```
@@ -103,4 +106,3 @@ vis_value(result_df)
 ```{r}
 result_df %>% filter(`do-d-40-se_user-syn-2020.xlsx` == 0) %>% rownames(.)
 ```
-
