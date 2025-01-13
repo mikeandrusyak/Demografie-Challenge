@@ -1,0 +1,245 @@
+---
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+---
+# Are Foreign Nationals Working More?
+In Switzerland, it is common to have part-time employment contracts of 80% or sometimes even 60%. For foreign nationals, this situation may seem unusual. Therefore, one of the hypotheses we investigated is that **foreign nationals might work more hours than local residents.**
+
+## Preparation to work
+**Loading Libraries, Functions, and Decoding Info**
+```{r, message=FALSE}
+library(dplyr)
+library(ggplot2)
+source("chart_functions.R")
+source("decode_lists.R")
+```
+**Loadind data**
+zp_merged_data.csv (presumably contains data about people).
+hh_merged_data.csv (household-related data).
+```{r}
+zp_merged_data <- read.csv("zp_merged_data.csv")
+hh_merged_data <- read.csv("hh_merged_data.csv")
+```
+**Merging the Datasets**
+```{r}
+# Об'єднання даних
+merged_data <- hh_merged_data %>%
+  left_join(zp_merged_data, by = c("HOUSEHOLDYEARLYID"="HOUSEHOLDYEARLYID","YEAR_QUIZ"="YEAR_QUIZ"))
+```
+**Selecting Variables for Chart Building**
+```{r}
+selected_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,TIMEWORKEDPERWEEKSUM, RESIDENTPERMIT)
+```
+RENTNET: Represents the net rent paid, essential for understanding the financial burden and economic needs of individuals.
+
+NATIONALITYCAT: Distinguishes between foreign nationals and local residents, crucial for comparing work hours and economic conditions.
+
+TIMEWORKEDPERWEEKSUM: Indicates the total weekly work hours, key for analyzing labor patterns across different groups.
+
+RESIDENTPERMIT: Identifies the type of residence permit, important for understanding differences among foreign nationals based on their legal status.
+
+**Filtering Extreme High RENTNET Values and NA**
+```{r}
+selected_data <- selected_data %>% filter((RENTNET < 5000 | RENTNET == -8) &
+                                            NATIONALITYCAT >= 0 &
+                                            TIMEWORKEDPERWEEKSUM >= 0 &
+                                            (RESIDENTPERMIT >= 0 | RESIDENTPERMIT == -2))
+```
+```{r}
+selected_data %>%  select(RENTNET) %>% filter(RENTNET < 10) %>% unique()
+```
+
+
+**Decoding Categorical Data**
+```{r}
+selected_data <- decode(selected_data, NATIONALITYCAT, nationality_category)
+selected_data <- decode(selected_data, RESIDENTPERMIT, permit)
+```
+## Exploring Variable Distributions
+```{r}
+selected_data %>%
+  distribution_numeric(TIMEWORKEDPERWEEKSUM, "Work time per week")
+
+selected_data %>%
+  distribution_numeric(RENTNET, "Rent Price")
+```
+
+### Work Time per Week Distribution
+
+**Observation:**  
+- Foreign nationals show a strong peak around 40 hours per week, indicating a more standardized schedule.
+- Swiss residents also peak at 40 hours but have a flatter distribution, indicating higher variability.
+
+---
+
+### Rent Distribution (Foreign vs. Swiss)
+
+**Observation:**  
+- Both groups have similar rent peaks (~1,500 CHF).  
+- The rent distribution for foreign nationals is more concentrated in the lower rent range.
+- The graph shows a significant increase in density at value 0 for both groups (foreigners and Swiss). This may indicate a large number of listings with zero rent, which may indicate that people have free accommodation or data is missing
+
+```{r}
+distribution_categorical(selected_data, NATIONALITYCAT, "Nationality")
+distribution_categorical(selected_data, RESIDENTPERMIT, "Permit")
+```
+### Nationality Distribution
+
+**Observation:**  
+- Swiss residents form the majority of the dataset.
+- Foreign nationals make up a smaller proportion overall.
+
+---
+
+### Resident Permit Distribution
+
+**Observation:**  
+- Most foreign nationals hold a Permit C (long-term residency), followed by Permit B (short-term residency).
+- Other permit types are relatively negligible in the dataset.
+
+## Analysis of Working Hours
+**General overwiev Worktime between Swiss and forein peopele**
+```{r, warning=FALSE}
+summary_stats <- selected_data %>%
+  group_by(NATIONALITYCAT) %>%
+  summarise(
+    mean_hours = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    median_hours = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    sd_hours = sd(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    min_hours = min(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    max_hours = max(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    Q1 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.25, na.rm = TRUE),
+    Q3 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.75, na.rm = TRUE),
+    count = n()
+  )
+
+selected_data %>%
+  filter(!is.na(TIMEWORKEDPERWEEKSUM) & !is.na(NATIONALITYCAT)) %>% 
+  group_by(NATIONALITYCAT) %>% 
+  ggplot(aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
+  geom_boxplot() +
+  stat_summary(
+    fun = median,
+    geom = "text",  
+    aes(label = round(..y.., 1)),  
+    vjust = 0.5,
+    hjust = 6.5,
+    color = "black",  
+    size = 4
+  ) +
+  labs(
+    title = "Comparison of Working Hours by Nationality",
+    x = "Nationality",
+    y = "Weekly Working Hours"
+  ) +
+  theme_minimal()
+
+print(summary_stats)
+```
+### Median Weekly Working Hours
+- **Migrants (Foreign):** Median weekly working time is 41 hours.  
+- **Swiss Residents:** Median weekly working time is 40 hours.  
+- **Implication:**  
+  - This small difference aligns with the hypothesis that migrants might work slightly more on average to meet economic demands.
+
+### Mean Weekly Working Hours
+- **Migrants (Foreign):** Average working hours is 37.85.  
+- **Swiss Residents:** Average working hours is 35.61.  
+- **Implication:**  
+  - This supports the idea that migrants tend to work longer hours overall, potentially reflecting the economic disparity between the groups.
+
+### Spread and Variability
+- **Standard Deviation:**  
+  - Migrants: 10.76, indicating more consistent working schedules.  
+  - Swiss Residents: 12.63, showing greater variability in working hours.  
+- **First Quartile (Q1):**  
+  - Migrants: 38 hours, reflecting a larger proportion working full-time or near full-time hours.  
+  - Swiss Residents: 29 hours, suggesting more part-time or flexible schedules among locals.
+
+## Rent Analysis from a Financial Perspective
+```{r}
+rent_analysis <- selected_data %>%
+  filter(!is.na(NATIONALITYCAT)) %>%
+  mutate(
+    pays_rent = case_when(
+      RENTNET > 0 ~ "Pays Rent",
+      RENTNET < 1 | is.na(RENTNET) ~ "Does Not Pay Rent"
+    )
+  ) %>%
+  group_by(NATIONALITYCAT, pays_rent) %>%
+  summarise(count = n(), .groups = "drop") %>% 
+  group_by(NATIONALITYCAT) %>% 
+  mutate(percentage = round(count / sum(count) * 100,2)) %>%
+  ungroup()
+
+ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(
+    aes(label = round(percentage, 2)),
+    position = position_dodge(width = 0.9),
+    vjust = -0.5,                    
+    size = 3
+  ) +
+  labs(title = "Distribution of rent payment by nationality categories",
+       x = "Category of nationality",
+       y = "Number",
+       fill = "Rent payment status") +
+  theme_minimal()
+
+print(rent_analysis)
+```
+
+### Rent Payment Proportion
+- **Migrants (Foreign):**  
+  - 73.9% pay rent.  
+  - 26.1% do not pay rent.  
+- **Swiss Residents:**  
+  - 44% pay rent.  
+  - 56% do not pay rent.  
+
+### Comparison Between Groups
+- A significantly higher percentage of migrants pay rent compared to Swiss residents (73.9% vs. 44%).  
+- Swiss residents are more likely not to pay rent (56%), which might indicate higher rates of home ownership or alternative living arrangements among locals.
+
+## Analysis Work Time by Permit
+```{r}
+mean_by_permit <- selected_data %>% filter(TIMEWORKEDPERWEEKSUM>0) %>% 
+  select(RESIDENTPERMIT, TIMEWORKEDPERWEEKSUM) %>% 
+  group_by(RESIDENTPERMIT) %>% 
+  summarise(mean_time = round(mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE, trim = 0.1), 2), .groups = "drop") %>% 
+  filter(!is.na(RESIDENTPERMIT)) %>% 
+  arrange(desc(mean_time))
+
+ggplot(mean_by_permit, aes(x = reorder(RESIDENTPERMIT, -mean_time), y = mean_time, fill = RESIDENTPERMIT)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = round(mean_time, 1)),  # Додано округлення для тексту
+    vjust = -0.5,                     # Позиція тексту над стовпчиком
+    size = 3
+  ) +
+  labs(
+    title = "Mean work time per week by permit",
+    x = "Permit type",
+    y = "Mean work time per week"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(fill = "none")
+
+print(mean_by_permit)
+```
+Interpretation:
+	•	Since Permit B and C holders represent the majority of foreign nationals, we compare them to local residents.
+	•	The average weekly working hours for Permit B holders are around 39.8 hours, which is roughly 3 hours more than Swiss residents.
+	•	Permit C holders average around 39 hours per week, about 2.2 hours more than Swiss residents.
+
+Permit B employees often have shorter or fixed-term contracts and must frequently apply for renewals, indicating a motivation to maintain stable employment. Permit C holders, on the other hand, may aim to obtain Swiss citizenship in the future, motivating them to work consistently and demonstrate their value to the country, especially given the complex interview and verification process for naturalization.
+
+
+## Conclusion
+
+Based on the analyzed data, foreign nationals in Switzerland tend to work slightly more hours per week compared to local residents. This difference can be attributed to economic motivations, such as the need for higher income, and to the desire of foreign nationals to secure or extend their residence permits.

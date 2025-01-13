@@ -46,14 +46,14 @@ sheet_names <- lapply(all_data, names) # sheet names in each file
 
 ```{r}
 variables_zp <- c("HOUSEHOLDYEARLYID", "SECCITIZ", "SECCITIZENSHIP",
-                  "NATIONALITYCAT", "NATIONALITYCONTI")
-variables_hh <- c("HOUSEHOLDYEARLYID", "TYPEOFOWNERSHIP","SIZEOFPRIVATEHOUSEHOLD")
+                  "NATIONALITYCAT", "NATIONALITYCONTI","TIMEWORKEDPERWEEKSUM", "RESIDENTPERMIT")
+variables_hh <- c("HOUSEHOLDYEARLYID", "TYPEOFOWNERSHIP","SIZEOFPRIVATEHOUSEHOLD","RENTNET")
 variables_list <- unique(c(variables_zp, variables_hh))
 ```
 
 ```{r}
-path_save = "questions_answers/home_owner_ship/"
-# saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
+path_save = "questions_answers/nationality_econ_status/"
+saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
 saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
 saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
 # saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
@@ -101,5 +101,6 @@ print(result_df)
 vis_value(result_df)
 ```
 ```{r}
-result_df %>% filter(`do-d-40-se_user-syn-2019.xlsx` == 0) %>% rownames(.)
+result_df %>% filter(`do-d-40-se_user-syn-2020.xlsx` == 0) %>% rownames(.)
 ```
+
