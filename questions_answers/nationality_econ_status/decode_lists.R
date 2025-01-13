@@ -21,22 +21,7 @@ occupation_isco_agg <- list(
   "-7" = NA
 )
 
-main_languages <- list(
-  "1" = "German",
-  "2" = "French",
-  "3" = "Italian",
-  "4" = "Romansh",
-  "5" = "Serbo-Croatian",
-  "6" = "Albanian",
-  "7" = "Portuguese",
-  "8" = "Spanish",
-  "9" = "English",
-  "10" = "Turkish",
-  "11" = "Tamil",
-  "12" = "Arabic",
-  "13" = "Dutch",
-  "14" = "Other languages"
-)
+
 
 nationality_conti <- list(
   "1" = "Switzerland",
@@ -85,31 +70,5 @@ permit <- list(
   "-2" = "Swiss",
   "-6" = NA,
   "-8" = NA,
-  "-9" = NA
-)
-
-work_status <- list(
-  "111" = "Self-employed (with employees)",
-  "112" = "Self-employed (no employees)",
-  "113" = "Family workers",
-  "121" = "Top-level employees",
-  "131" = "Top-level employees",
-  "124" = "Mid-level employees",
-  "134" = "Mid-level employees",
-  "125" = "Regular employees",
-  "135" = "Regular employees",
-  "126" = "Protected workshop",
-  "136" = "Protected workshop",
-  "127" = "Apprentices",
-  "137" = "Apprentices",
-  "128" = "Unspecified employees",
-  "130" = "Unspecified workers",
-  "200" = "Unemployed",
-  "301" = "In education",
-  "302" = "Voluntary workers",
-  "303" = "Homemakers",
-  "304" = "Retirees",
-  "305" = "Disabled persons",
-  "306" = "Other inactive persons",
   "-9" = NA
 )

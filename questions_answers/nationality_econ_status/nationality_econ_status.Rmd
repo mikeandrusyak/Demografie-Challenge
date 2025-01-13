@@ -32,32 +32,39 @@ merged_data <- hh_merged_data %>%
 ```
 **Selecting Variables for Chart Building**
 ```{r}
-selected_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,TIMEWORKEDPERWEEKSUM, 
-                          RESIDENTPERMIT,CURROCCUPATIONISCOAGG,YEAR_QUIZ)
+selected_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,TIMEWORKEDPERWEEKSUM, RESIDENTPERMIT)
 ```
-**Filtering Extreme High RENTNET Values**
+RENTNET: Represents the net rent paid, essential for understanding the financial burden and economic needs of individuals.
+
+NATIONALITYCAT: Distinguishes between foreign nationals and local residents, crucial for comparing work hours and economic conditions.
+
+TIMEWORKEDPERWEEKSUM: Indicates the total weekly work hours, key for analyzing labor patterns across different groups.
+
+RESIDENTPERMIT: Identifies the type of residence permit, important for understanding differences among foreign nationals based on their legal status.
+
+**Filtering Extreme High RENTNET Values and NA**
 ```{r}
-selected_data <- selected_data %>% filter(RENTNET<5000)
+selected_data <- selected_data %>% filter((RENTNET < 5000 | RENTNET == -8) &
+                                            NATIONALITYCAT >= 0 &
+                                            TIMEWORKEDPERWEEKSUM >= 0 &
+                                            (RESIDENTPERMIT >= 0 | RESIDENTPERMIT == -2))
 ```
-**Decoding Numeric Data**
 ```{r}
-selected_data <- decode(selected_data, TIMEWORKEDPERWEEKSUM, for_numeric_variables)
-selected_data$TIMEWORKEDPERWEEKSUM <- as.numeric(as.character(selected_data$TIMEWORKEDPERWEEKSUM))
-selected_data <- decode(selected_data, RENTNET, for_numeric_variables)
-selected_data$RENTNET <- as.numeric(as.character(selected_data$RENTNET))
+selected_data %>%  select(RENTNET) %>% filter(RENTNET < 10) %>% unique()
 ```
+
+
 **Decoding Categorical Data**
 ```{r}
-selected_data <- decode(selected_data, CURROCCUPATIONISCOAGG, occupation_isco_agg)
 selected_data <- decode(selected_data, NATIONALITYCAT, nationality_category)
 selected_data <- decode(selected_data, RESIDENTPERMIT, permit)
 ```
 ## Exploring Variable Distributions
 ```{r}
-selected_data %>% filter(!is.na(NATIONALITYCAT)) %>% 
+selected_data %>%
   distribution_numeric(TIMEWORKEDPERWEEKSUM, "Work time per week")
 
-selected_data %>% filter(!is.na(NATIONALITYCAT)) %>% 
+selected_data %>%
   distribution_numeric(RENTNET, "Rent Price")
 ```
 
@@ -74,22 +81,12 @@ selected_data %>% filter(!is.na(NATIONALITYCAT)) %>%
 **Observation:**  
 - Both groups have similar rent peaks (~1,500 CHF).  
 - The rent distribution for foreign nationals is more concentrated in the lower rent range.
+- The graph shows a significant increase in density at value 0 for both groups (foreigners and Swiss). This may indicate a large number of listings with zero rent, which may indicate that people have free accommodation or data is missing
 
 ```{r}
-distribution_categorical(selected_data, CURROCCUPATIONISCOAGG, "Ocupation")
 distribution_categorical(selected_data, NATIONALITYCAT, "Nationality")
 distribution_categorical(selected_data, RESIDENTPERMIT, "Permit")
 ```
-
-### Occupation Distribution
-
-**Observation:**  
-- A substantial portion of the data is missing or unreported (NA).  
-- Among the reported data, academic and service/sales jobs are the most common.  
-- Managerial and armed forces roles show minimal representation.
-
----
-
 ### Nationality Distribution
 
 **Observation:**  
@@ -174,23 +171,23 @@ rent_analysis <- selected_data %>%
     )
   ) %>%
   group_by(NATIONALITYCAT, pays_rent) %>%
-  summarise(count = n(), .groups = "drop") %>% # Використовуємо .groups = "drop", щоб уникнути залишення груп
-  group_by(NATIONALITYCAT) %>% # Групуємо тільки за NATIONALITYCAT для коректних розрахунків відсотків
+  summarise(count = n(), .groups = "drop") %>% 
+  group_by(NATIONALITYCAT) %>% 
   mutate(percentage = round(count / sum(count) * 100,2)) %>%
-  ungroup() # Знімаємо всі групування, щоб уникнути можливих майбутніх конфліктів
+  ungroup()
 
 ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(
     aes(label = round(percentage, 2)),
     position = position_dodge(width = 0.9),
-    vjust = -0.5,                     # Позиція тексту над стовпчиком
+    vjust = -0.5,                    
     size = 3
   ) +
-  labs(title = "Розподіл оплати оренди за категоріями національності",
-       x = "Категорія національності",
-       y = "Кількість",
-       fill = "Статус оплати оренди") +
+  labs(title = "Distribution of rent payment by nationality categories",
+       x = "Category of nationality",
+       y = "Number",
+       fill = "Rent payment status") +
   theme_minimal()
 
 print(rent_analysis)

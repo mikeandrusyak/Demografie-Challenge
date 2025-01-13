@@ -23,15 +23,16 @@ distribution_numeric <- function(df, var, litle_var){
 } 
 
 decode <- function(df, var, decode_mapping) {
-  # Перетворюємо ключі у списку на текст
   for (key in names(decode_mapping)) {
     value <- decode_mapping[[key]]
     df <- df %>%
       mutate({{ var }} := case_match(
-        as.character({{ var }}),  # Перетворюємо значення змінної на текст
-        key ~ value,              # Зіставляємо ключ зі значенням
-        .default = as.character({{ var }})  # Залишаємо оригінальне значення, якщо немає відповідності
+        as.character({{ var }}),
+        key ~ value,
+        .default = as.character({{ var }})
       ))
   }
+  df <- df %>%
+    mutate({{ var }} := as.factor({{ var }}))
   return(df)
 }
