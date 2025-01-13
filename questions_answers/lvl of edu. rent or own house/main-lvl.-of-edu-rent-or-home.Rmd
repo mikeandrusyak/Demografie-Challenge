@@ -1,13 +1,18 @@
 ---
-title: "R Notebook"
-output: html_notebook
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
 ---
-Question : How does the level of education affect the type of ownership?
+
+# Question : How does the level of education affect the type of ownership?
 
 
-##loading the libraryies
+## Preparing The data
 
-```{r}
+```{r, message=FALSE}
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
@@ -16,9 +21,8 @@ library(RColorBrewer)
 
 
 
-#merging data
+**merging data**
 
-Merging the data for highest education, type of ownership, age, and the year the quiz was taken.
 
 ```{r}
 hh_merged_data <- read.csv("hh_merged_data.csv")
@@ -26,7 +30,7 @@ zp_merged_data <- read.csv("zp_merged_data.csv")
 ```
 
 
-#Choosing the variables relevant to my question
+**Choosing the variables relevant to my question**
 
 There are many variables related to the highest completed education, but I chose the HIGHESTCOMPLEDU variable because it contains sufficient information for this analysis and encompasses the data from all the other related variables.
 
@@ -56,19 +60,15 @@ complete_edu_and_ownership <- left_join(zp_selected, hh_selected, by = c("HOUSEH
 
 
 
-#Transforming the AGE variable and preparing it for analysis
-
-The segmentation starts from age 15, which marks the end of compulsory education.
-
-On average, it takes around 6 years to complete a typical education level.This average duration was used as the basis for determining the range of each age group.
+**Transforming the AGE variable and preparing it for analysis**
 
 ```{r}
 
 complete_edu_and_ownership$agegroup <- cut(
   complete_edu_and_ownership$AGE,
-  breaks = c(15, 22, 29, 36, 43, 50, 57, Inf), 
+  breaks = c(15, 20, 35, 50, Inf), 
   right = FALSE, 
-  labels = c("15-21", "22-28", "29-35", "36-42", "43-49", "50-56", "57+")
+  labels = c("Teen", "Young Adult", "Adult", "Mature Adult")
 )
 
 
@@ -76,22 +76,18 @@ complete_edu_and_ownership$agegroup <- cut(
 
 
 
-# Clean and transform the dataset
-
-Recoding the levels of the TYPEOFOWNERSHIP and HIGHESTCOMPLEDU variable.
-
-Converting the YEAR_QUIZ column into a factor to ensure categorical handling.
+**Clean and transform the data set**
 
 ```{r}
 complete_edu_and_ownership <- complete_edu_and_ownership %>%
   mutate(
     TYPEOFOWNERSHIP = recode(
       as.factor(TYPEOFOWNERSHIP),
-      "1" = "Tenant",                  # 1 -> Tenant
-      "2" = "Cooperative member",      # 2 -> Cooperative member
-      "3" = "Condominium owner",       # 3 -> Condominium owner
-      "4" = "House owner",             # 4 -> House owner
-      "5" = "Other situation"          # "Andere Situation"
+      "1" = "Tenant",                
+      "2" = "Cooperative member",      
+      "3" = "Condominium owner",       
+      "4" = "House owner",            
+      "5" = "Other situation"          
     ),
     YEAR_QUIZ = as.factor(YEAR_QUIZ),
     HIGHESTCOMPLEDU = recode(
@@ -112,39 +108,7 @@ complete_edu_and_ownership <- complete_edu_and_ownership %>%
     )
   )
 
-```
 
-
-.............................................................
-Here is a brief explanation of the TYPEOFOWNERSHIP variable:
-
-Tenant - Individuals renting an apartment or house.
-Cooperative Member - Individuals who are members of a housing cooperative.
-Condominium Owner - Owners of an apartment or unit in a building.
-House Owner - Owners of an entire house.
-Other Situations - Includes cases where housing is provided free by a relative or employer, service apartments (e.g., caretaker's apartment), or leased by a tenant.
-.............................................................
-
-
-# Summary of missing values and levels
-
-This code checks the dataset for missing values (`NA`) in each column and identifies unused levels in factor variables, ensuring the data is clean and ready for analysis.
-
-```{r}
-summary_cleaned_data <- lapply(complete_edu_and_ownership, function(x) {
-  list(
-    MissingValues = sum(is.na(x)),
-    Levels = if (is.factor(x)) levels(x) else NULL
-  )
-})
-print(summary_cleaned_data)
-```
-
-#Filter and Clean Data 
-
-This code filters out invalid and missing values from HIGHESTCOMPLEDU and TYPEOFOWNERSHIP, removes NA rows, and drops unused factor levels in HIGHESTCOMPLEDU . The result is stored in cleaned_data for analysis.
-
-```{r}
 cleaned_data <- complete_edu_and_ownership %>%
   filter(
     !HIGHESTCOMPLEDU %in% c("-9", "None"),
@@ -152,23 +116,30 @@ cleaned_data <- complete_edu_and_ownership %>%
     !is.na(TYPEOFOWNERSHIP)
   ) %>%
   mutate(HIGHESTCOMPLEDU = droplevels(HIGHESTCOMPLEDU))
+
 ```
 
 
+---
+***Here is a brief explanation of the TYPEOFOWNERSHIP variable:***
+
+Tenant - Individuals renting an apartment or house.
+Cooperative Member - Individuals who are members of a housing cooperative.
+Condominium Owner - Owners of an apartment or unit in a building.
+House Owner - Owners of an entire house.
+Other Situations - Includes cases where housing is provided free by a relative or employer, service apartments (e.g., caretaker's apartment), or leased by a tenant.
+---
 
 
 
 
-Plots
-------------------------
 
-Question: What is the most commonly completed education level among different generations?
 
-.From the graph, we observe that "Basic Vocational Education and Training" is the most commonly completed education level among the population.
 
-.Additionally, we see that younger generations tend to focus more on higher education, while older generations predominantly pursued vocational training. 
+## Plots
 
-.This reflects a shift in educational priorities over time, with the younger generation placing greater emphasis on academic qualifications.
+
+**What is the most commonly completed education level among different generations?**
 
 ```{r}
 heatmap_data <- cleaned_data %>%
@@ -191,12 +162,16 @@ ggplot(heatmap_data, aes(x = agegroup, y = HIGHESTCOMPLEDU, fill = n)) +
   )
 
 ```
+From the graph, we observe that "Basic Vocational Education and Training" is the most commonly completed education level among the population.
 
-1. Relationship Between Education Level and Ownership Type
+.Additionally, we see that younger generations tend to focus more on higher education, while older generations predominantly pursued vocational training. 
 
-Question: How is ownership type distributed across different education levels?
+.This reflects a shift in educational priorities over time, with the younger generation placing greater emphasis on academic qualifications.
 
-.Without considering age, renting a house is the most dominant ownership type across all education groups.
+
+**How is ownership type distributed across different education levels?**
+
+
 
 ```{r}
 proportions_data <- cleaned_data %>%
@@ -224,13 +199,12 @@ ggplot(proportions_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFO
 
 ```
 
+Without considering age, renting a house is the most dominant ownership type across all education groups.
 
 
-2. Relationship Between Age Group and Ownership Type
+**What ownership types are more common in specific age groups?**
 
-Question: What ownership types are more common in specific age groups?
 
-.Older individuals are more likely to own property, even without considering the education factor.
 
 ```{r}
 ggplot(cleaned_data, aes(x = agegroup, fill = TYPEOFOWNERSHIP)) +
@@ -253,9 +227,10 @@ ggplot(cleaned_data, aes(x = agegroup, fill = TYPEOFOWNERSHIP)) +
   ) +
   coord_flip()
 ```
-Analyzing the age distribution across different ownership types.
+Older individuals are more likely to own property, even without considering the education factor.
 
-"Tenants" and "Other Situations" exhibit broader age ranges, while "Condominium Owners" and "House Owners" show more consistent distributions.
+
+**Analyzing the age distribution across different ownership types.**
 
 ```{r}
 cleaned_data %>%
@@ -269,12 +244,13 @@ cleaned_data %>%
     panel.grid = element_blank() 
   )
 ```
+"Tenants" and "Other Situations" exhibit broader age ranges, while "Condominium Owners" and "House Owners" show more consistent distributions.
 
-3. Changes in Ownership Type Over Time
 
-Question: How have the proportions of ownership types and highest education levels changed over the years ?
 
-.The age factor does not significantly affect either education or ownership type. However, it should be noted that the data spans only 11 years.
+**How have the proportions of ownership types and highest education levels changed over the years ?**
+
+
  
 ```{r}
 ggplot(cleaned_data, aes(x = YEAR_QUIZ, fill = TYPEOFOWNERSHIP)) +
@@ -291,8 +267,8 @@ ggplot(cleaned_data, aes(x = YEAR_QUIZ, fill = TYPEOFOWNERSHIP)) +
   ) +
   coord_flip()
 ```
+The age factor does not significantly affect either education or ownership type. However, it should be noted that the data spans only 11 years.
 
-.From this chart, we can observe that people are increasingly focusing on higher education over time. As shown in the first chart, newer generations concentrate more on higher education.
 
 ```{r}
 ggplot(cleaned_data, aes(x = YEAR_QUIZ, fill = HIGHESTCOMPLEDU)) +
@@ -310,36 +286,33 @@ ggplot(cleaned_data, aes(x = YEAR_QUIZ, fill = HIGHESTCOMPLEDU)) +
   coord_flip()
 ```
 
-4.Interplay of Multiple Factors
+From this chart, we can observe that people are increasingly focusing on higher education over time. As shown in the first chart, newer generations concentrate more on higher education.
 
-Does the combination of education and age groups influence ownership type ?
+---
 
-.This trend is expected, as younger individuals are less likely to own property and more likely to rent or have undefined ownership types.
-.The proportion of Property Owners also increases in older age groups, particularly for mid-to-high education levels.
+**Interplay of Multiple Factors**
 
-Are there distinct patterns of ownership types for individuals with different education levels across various age groups?
+**Does the combination of education and age groups influence ownership type ?**
 
-.Higher education levels are associated with an earlier and more significant shift from Tenant to property owner.
-."Tenant" remains dominant even in older age groups.
 
-How do the distributions of ownership types vary when both age group and education level are considered simultaneously?
+**Are there distinct patterns of ownership types for individuals with different education levels across various age groups?**
+
+**How do the distributions of ownership types vary when both age group and education level are considered simultaneously?**
  
-.Ownership types transition earlier and more significantly for individuals with higher education levels across all age groups.
-
 ```{r}
 grouped_data <- cleaned_data %>%
   group_by(agegroup, HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
   summarise(Count = n()) %>%
   mutate(Proportion = Count / sum(Count))
 
-ggplot(grouped_data, aes(x = agegroup, y = Proportion, fill = TYPEOFOWNERSHIP)) +
+ggplot(grouped_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNERSHIP)) +
   geom_bar(stat = "identity", color = "black") +
   geom_text(
     aes(label = scales::percent(Proportion, accuracy = 0.1)), 
     position = position_stack(vjust = 0.5), 
     size = 2.3
   ) +
-  facet_wrap(~ HIGHESTCOMPLEDU, scales = "free") +
+  facet_wrap(~ agegroup, scales = "free") +
   scale_fill_brewer(palette = "Set3") +
   labs(
     title = "Ownership Types by Age Group and Education Level",
@@ -351,33 +324,39 @@ ggplot(grouped_data, aes(x = agegroup, y = Proportion, fill = TYPEOFOWNERSHIP)) 
 
 ```
 
+This trend is expected, as younger individuals are less likely to own property and more likely to rent or have undefined ownership types.
 
+The proportion of Property Owners also increases in older age groups, particularly for mid-to-high education levels.
 
-----------------------------------------------------------------------
-The Influence of Education and Generational Trends on House Ownership
------------------------------------------------------------------------
-The relationship between education, generational trends, and home ownership reveals significant patterns in societal development. This report combines insights on higher education, generational behaviors, and future projections to provide a cohesive view of how these factors interact.
+Higher education levels are associated with an earlier and more significant shift from Tenant to property owner.
 
-The Impact of Education on Home Ownership:
-Education level plays a critical role in determining the likelihood of home ownership. Individuals with higher education levels are significantly more likely to own a house compared to those with lower education levels. This trend becomes more pronounced as people age, highlighting the long-term benefits of education in achieving financial stability and home ownership. Among individuals aged 60 and older, those with higher education are more likely to own a house rather than rent, whereas this pattern is less evident among individuals with lower education levels.
+"Tenant" remains dominant even in older age groups.
 
-Generational Shifts in Education and Ownership:
-Generational differences also influence these patterns. Older generations were more inclined to pursue vocational education, reflecting the economic and societal priorities of their time. In contrast, younger generations are increasingly focusing on higher education, prioritizing advanced qualifications over vocational training. This shift suggests a growing emphasis on education as a pathway to financial success and property ownership.
+Ownership types transition earlier and more significantly for individuals with higher education levels across all age groups.
 
-Future Implications:
-If current trends continue, the younger generation’s focus on higher education could lead to higher home ownership rates in the next 20 years. This projection assumes that the patterns of ownership remain stable, as they have over the past 11 years. However, societal changes in housing markets, economic conditions, or preferences for renting versus owning could alter this trajectory.
+---
 
-Conclusion:
-The relationship between education, generational trends, and house ownership is clear: higher education correlates with increased home ownership, particularly among older individuals. Generational shifts toward higher education suggest the potential for increased home ownership in the future, provided current patterns persist. These findings highlight the evolving role of education in shaping financial stability and housing outcomes across generations.
+## Answer to Question
+
+**The relationship between education, generational trends, and home ownership reveals significant patterns in societal development. This report combines insights on higher education, generational behaviors, and future projections to provide a cohesive view of how these factors interact.**
+
+-The Impact of Education on Home Ownership:
+**Education level plays a critical role in determining the likelihood of home ownership. Individuals with higher education levels are significantly more likely to own a house compared to those with lower education levels. This trend becomes more pronounced as people age, highlighting the long-term benefits of education in achieving financial stability and home ownership. Among individuals aged 60 and older, those with higher education are more likely to own a house rather than rent, whereas this pattern is less evident among individuals with lower education levels.**
+
+-Generational Shifts in Education and Ownership:
+**Generational differences also influence these patterns. Older generations were more inclined to pursue vocational education, reflecting the economic and societal priorities of their time. In contrast, younger generations are increasingly focusing on higher education, prioritizing advanced qualifications over vocational training. This shift suggests a growing emphasis on education as a pathway to financial success and property ownership.**
+
+-Future Implications:
+**If current trends continue, the younger generation’s focus on higher education could lead to higher home ownership rates in the next 20 years. This projection assumes that the patterns of ownership remain stable, as they have over the past 11 years. However, societal changes in housing markets, economic conditions, or preferences for renting versus owning could alter this trajectory.**
+
+---
+
+-Conclusion:
+**The relationship between education, generational trends, and house ownership is clear: higher education correlates with increased home ownership, particularly among older individuals. Generational shifts toward higher education suggest the potential for increased home ownership in the future, provided current patterns persist. These findings highlight the evolving role of education in shaping financial stability and housing outcomes across generations.**
+
+**Understanding the interplay between education, generational trends, and housing patterns provides valuable insights for policymakers, educators, and society at large. Supporting education and addressing housing market challenges can pave the way for a more equitable and stable future.**
  
-
-Understanding the interplay between education, generational trends, and housing patterns provides valuable insights for policymakers, educators, and society at large. Supporting education and addressing housing market challenges can pave the way for a more equitable and stable future.
  
- 
- 
-website I used 
-
-(https://www.eda.admin.ch/aboutswitzerland/en/home/bildung-wissenschaft/bildung.html#:~:text=The%20education%20system%20is%20split,or%20the%20general%20academic%20route. )
 
 
  
