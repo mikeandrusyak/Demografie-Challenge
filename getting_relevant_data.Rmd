@@ -45,8 +45,9 @@ sheet_names <- lapply(all_data, names) # sheet names in each file
 
 
 ```{r}
-variables_zp <- c("HOUSEHOLDYEARLYID","NATIONALITYCAT","TIMEWORKEDPERWEEKSUM", "RESIDENTPERMIT")
-variables_hh <-  c("HOUSEHOLDYEARLYID","RENTNET")
+variables_zp <- c("HOUSEHOLDYEARLYID", "SECCITIZ", "SECCITIZENSHIP",
+                  "NATIONALITYCAT", "NATIONALITYCONTI","TIMEWORKEDPERWEEKSUM", "RESIDENTPERMIT")
+variables_hh <- c("HOUSEHOLDYEARLYID", "TYPEOFOWNERSHIP","SIZEOFPRIVATEHOUSEHOLD","RENTNET")
 variables_list <- unique(c(variables_zp, variables_hh))
 ```
 
