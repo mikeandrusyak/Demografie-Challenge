@@ -63,8 +63,8 @@ Way 0:
 Way 1:
 - Unzip our zip data file (was sent per mail) to folder Report.
   - Check the path **Report/data/** and here two files **zp_merged_data.csv** and **hh_merged_data.csv**
-- Run **Report/main.Rmd** to get report. 
-- Use knit to generate html file.
+- Run **Report/main.Rmd** to get report and charts. 
+- Use knit to regenerate html file.
 
 Way 2:
 Before start of running the script, place the raw data in the “data/strukturerhebung/years_SE_RS_CSV” .
