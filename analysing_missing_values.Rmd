@@ -1,3 +1,21 @@
+This script automates the extraction, validation, and analysis of specific variables from multiple Excel files with multiple sheets.
+Quick Start Guide:
+
+1. Data Preparation
+	•	Place Excel files in the folder: data/strukturerhebung/.
+	•	Ensure file names follow the pattern: do-d-40-se_user-syn-(201[0-9]).xls.
+
+2. Run the Script
+	1.	Read Files: Reads all sheets from each Excel file and extracts the first column.
+	2.	Check Variables:
+	  •	Predefined variables are stored in variables_zp and variables_hh.
+	  •	The script generates a presence matrix (result_df) showing if variables are found in each file.
+
+4.	Save Results:
+	  •	Saves variables and matrix as .rds files in questions_answers/nationality_econ_status/.
+
+
+
 ```{r}
 library(readxl)
 library(dplyr)
