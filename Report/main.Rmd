@@ -1,5 +1,5 @@
 ---
-title: "Challenges to Immigrant Integration in Switzerland"
+title: "Opportunities for integration through homeownership and their correlation with education level and employment rate"
 output: 
   html_document:
     toc: true
@@ -8,10 +8,16 @@ output:
     number_sections: true
 ---
 **Why this topic**
+Our team consists of immigrants, and we place great importance on the process of integration. It is crucial for us to meet the high standards of Switzerland, a country that has provided us with valuable opportunities in exchange for honest work, tax contributions, and successful examples of integration.
 
-# Prepare data
+We consider purchasing a home to be one of the key milestones in the integration process. Therefore, we have decided to analyze the factors that contribute to a successful home purchase and those that can increase its likelihood. These factors may include the successful completion of education or long-term full-time employment.
+
+We are eager to gain a deeper understanding of these aspects and warmly invite you to join us in this endeavor.
+
+
+# Data Preparation
 **Loading Libraries, Functions, and Decoding Info**
-```{r, message=FALSE}
+```{r message=FALSE}
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -19,12 +25,12 @@ library(RColorBrewer)
 source("chart_functions.R")
 source("decode_lists.R")
 ```
-**Loadind data**
+**Loading data**
 ```{r}
 zp_merged_data <- read.csv("data/zp_merged_data.csv")  # individual-level data
 hh_merged_data <- read.csv("data/hh_merged_data.csv")  # household-level data
 ```
-**Merging the Datasets**
+**Merging the Data sets**
 ```{r}
 # Merge datasets (household-level + individual-level)
 merged_data <- hh_merged_data %>%
@@ -57,15 +63,9 @@ merged_data$AGE_GROUP <- cut(
 )
 ```
 
-***Here is a brief explanation of the TYPEOFOWNERSHIP variable:***
 
-Tenant - Individuals renting an apartment or house.
-Cooperative Member - Individuals who are members of a housing cooperative.
-Condominium Owner - Owners of an apartment or unit in a building.
-House Owner - Owners of an entire house.
-Other Situations - Includes cases where housing is provided free by a relative or employer, service apartments (e.g., caretaker's apartment), or leased by a tenant.
 
-# Question: How does education level vary with type of employment?
+#  How does education level vary with type of employment?
 
 ## Extracting only the necessary data
 ```{r}
@@ -226,204 +226,219 @@ Young people are focusing more on higher education. This will likely help them g
 > **Governments should create ways for young people to combine education with part-time jobs.**  
 > **Supporting education will keep Switzerland’s economy strong in the future.**
 
-# Question: Are Foreign Nationals Working More?
+# Question : How does the level of education affect the type of ownership?
+
+***Here is a brief explanation of the TYPEOFOWNERSHIP variable:***
+
+Tenant - Individuals renting an apartment or house.
+Cooperative Member - Individuals who are members of a housing cooperative.
+Condominium Owner - Owners of an apartment or unit in a building.
+House Owner - Owners of an entire house.
+Other Situations - Includes cases where housing is provided free by a relative or employer, service apartments (e.g., caretaker's apartment), or leased by a tenant.
 
 
-In Switzerland, it is common to have part-time employment contracts of 80% or sometimes even 60%. For foreign nationals, this situation may seem unusual. Therefore, one of the hypotheses we investigated is that **foreign nationals might work more hours than local residents.**
-
-
-**Selecting Variables for Chart Building**
 ```{r}
-work_loading_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,TIMEWORKEDPERWEEKSUM, RESIDENTPERMIT)
+complete_edu_and_ownership <- merged_data %>%
+  select(HIGHESTCOMPLEDU, AGE_GROUP, TYPEOFOWNERSHIP, YEAR_QUIZ, AGE)
 ```
-RENTNET: Represents the net rent paid, essential for understanding the financial burden and economic needs of individuals.
 
-NATIONALITYCAT: Distinguishes between foreign nationals and local residents, crucial for comparing work hours and economic conditions.
-
-TIMEWORKEDPERWEEKSUM: Indicates the total weekly work hours, key for analyzing labor patterns across different groups.
-
-RESIDENTPERMIT: Identifies the type of residence permit, important for understanding differences among foreign nationals based on their legal status.
-
-**Filtering Extreme High RENTNET Values and NA**
 ```{r}
-work_loading_data <- work_loading_data %>% filter((RENTNET < 5000 | RENTNET == -8) &
-                                            !is.na(NATIONALITYCAT) &
-                                            !is.na(RESIDENTPERMIT) &
-                                            TIMEWORKEDPERWEEKSUM >= 0)
+complete_edu_and_ownership <- complete_edu_and_ownership %>%
+  filter(
+    !is.na(HIGHESTCOMPLEDU),
+    !is.na(AGE_GROUP),
+    !is.na(TYPEOFOWNERSHIP)
+  )
 ```
+
 ## Plots
 
-### Nationality Distribution
-
-**What is the distribution of the population by nationality?**
+### How is ownership type distributed across different education levels?
 
 ```{r}
-distribution_categorical(work_loading_data, NATIONALITYCAT, "Nationality")
+proportions_data <- complete_edu_and_ownership %>%
+  count(HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
+  group_by(HIGHESTCOMPLEDU) %>%
+  mutate(Proportion = n / sum(n)) %>% 
+  arrange(desc(Proportion), .by_group = TRUE)
+
+ggplot(proportions_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNERSHIP)) +
+  geom_bar(stat = "identity", position = "fill",color = "black") +
+  geom_text(
+    aes(label = scales::percent(Proportion, accuracy = 0.1)),
+    position = position_fill(vjust = 0.5),
+    size = 3
+  ) +
+  scale_fill_brewer(palette = "Set2") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.line = element_line(size = 1)) +
+  labs(
+    title = "Education Level and Ownership Type",
+    x = "Education Level",
+    y = "Proportion"
+  )+
+  coord_flip() 
+
 ```
-**The chart shows Swiss residents outnumber foreign nationals, but the significant foreign population cannot be ignored.**
 
----
+Without considering age, renting a house is the most dominant ownership type across all education groups.
 
-### Analysis of Working Hours
 
-**General overwiev Worktime between Swiss and forein peopele**
+### What ownership types are more common in specific age groups? 
 
-```{r, warning=FALSE}
-summary_stats <- work_loading_data %>%
-  group_by(NATIONALITYCAT) %>%
-  summarise(
-    mean_hours = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    median_hours = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    sd_hours = sd(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    min_hours = min(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    max_hours = max(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    Q1 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.25, na.rm = TRUE),
-    Q3 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.75, na.rm = TRUE),
-    count = n()
-  )
 
-work_loading_data %>%
-  filter(!is.na(TIMEWORKEDPERWEEKSUM) & !is.na(NATIONALITYCAT)) %>% 
-  group_by(NATIONALITYCAT) %>% 
-  ggplot(aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
+
+```{r}
+ggplot(complete_edu_and_ownership, aes(x = AGE_GROUP, fill = TYPEOFOWNERSHIP)) +
+  geom_bar(position = "fill", color = "black") +
+  geom_text(
+    aes(label = scales::percent(..count../tapply(..count.., ..x.., sum)[..x..], accuracy = 0.1)),
+    stat = "count",
+    position = position_fill(vjust = 0.5),
+    size = 3
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    axis.line = element_line(size = 1.5)
+  ) +
+  scale_fill_brewer(palette = "Set2") + 
+  labs(
+    title = "Age Group and Ownership Type",
+    x = "Ownership Type",
+    y = "Proportion"
+  ) +
+  coord_flip()
+```
+Older individuals are more likely to own property, even without considering the education factor.
+
+
+### Analyzing the age distribution across different ownership types.
+
+```{r}
+complete_edu_and_ownership %>%
+  ggplot(aes(x = TYPEOFOWNERSHIP, y = AGE)) +
   geom_boxplot() +
-  stat_summary(
-    fun = median,
-    geom = "text",  
-    aes(label = round(..y.., 1)),  
-    vjust = 0.5,
-    hjust = 6.5,
-    color = "black",  
-    size = 4
-  ) +
-  labs(
-    title = "Comparison of Working Hours by Nationality",
-    x = "Nationality",
-    y = "Weekly Working Hours"
-  ) +
-  theme_minimal()
-
-print(summary_stats)
-```
-**1. Median Weekly Working Hours**
-- **Migrants (Foreign):** Median weekly working time is 41 hours.  
-- **Swiss Residents:** Median weekly working time is 40 hours.  
-- **Implication:**  
-  - This small difference aligns with the hypothesis that migrants might work slightly more on average to meet economic demands.
-
-**2. Mean Weekly Working Hours**
-- **Migrants (Foreign):** Average working hours is 37.85.  
-- **Swiss Residents:** Average working hours is 35.61.  
-- **Implication:**  
-  - This supports the idea that migrants tend to work longer hours overall, potentially reflecting the economic disparity between the groups.
-
-**3. Spread and Variability**
-- **Standard Deviation:**  
-  - Migrants: 10.76, indicating more consistent working schedules.  
-  - Swiss Residents: 12.63, showing greater variability in working hours.  
-- **First Quartile (Q1):**  
-  - Migrants: 38 hours, reflecting a larger proportion working full-time or near full-time hours.  
-  - Swiss Residents: 29 hours, suggesting more part-time or flexible schedules among locals.
-
-
-
-### Rent Analysis from a Financial Perspective
-
-**What is the difference in renting prices between foreigners and locals?** 
-
-```{r}
-work_loading_data %>%
-  distribution_numeric(RENTNET, "Rent Price")
-```
-
-- Both groups have similar rent peaks (~1,500 CHF).  
-- The rent distribution for foreign nationals is more concentrated in the lower rent range.
-- The graph shows a significant increase in density at value 0 for both groups (foreigners and Swiss). This may indicate a large number of listings with zero rent, which may indicate that people have free accommodation or data is missing
-
-```{r}
-rent_analysis <- work_loading_data %>%
-  filter(!is.na(NATIONALITYCAT)) %>%
-  mutate(
-    pays_rent = case_when(
-      RENTNET > 0 ~ "Pays Rent",
-      RENTNET < 1 | is.na(RENTNET) ~ "Does Not Pay Rent"
-    )
-  ) %>%
-  group_by(NATIONALITYCAT, pays_rent) %>%
-  summarise(count = n(), .groups = "drop") %>% 
-  group_by(NATIONALITYCAT) %>% 
-  mutate(percentage = round(count / sum(count) * 100,2)) %>%
-  ungroup()
-
-ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(
-    aes(label = round(percentage, 2)),
-    position = position_dodge(width = 0.9),
-    vjust = -0.5,                    
-    size = 3
-  ) +
-  labs(title = "Distribution of rent payment by nationality categories",
-       x = "Category of nationality",
-       y = "Number",
-       fill = "Rent payment status") +
-  theme_minimal()
-
-print(rent_analysis)
-```
-
-- Swiss residents are more likely not to pay rent, which might indicate higher rates of home ownership or alternative living arrangements among locals.
-
-
-### Analysis Work Time by Permit
-
-```{r}
-distribution_categorical(work_loading_data, RESIDENTPERMIT, "Permit")
-```
-
-**Most foreign nationals primarily hold Permit C (long-term residency), followed by Permit B (short-term residency). Other permit types make up only a small portion of the dataset.**
-
-```{r}
-mean_by_permit <- work_loading_data %>% filter(TIMEWORKEDPERWEEKSUM>0) %>% 
-  select(RESIDENTPERMIT, TIMEWORKEDPERWEEKSUM) %>% 
-  group_by(RESIDENTPERMIT) %>% 
-  summarise(mean_time = round(mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE, trim = 0.1), 2), .groups = "drop") %>% 
-  filter(!is.na(RESIDENTPERMIT)) %>% 
-  arrange(desc(mean_time))
-
-ggplot(mean_by_permit, aes(x = reorder(RESIDENTPERMIT, -mean_time), y = mean_time, fill = RESIDENTPERMIT)) +
-  geom_bar(stat = "identity") +
-  geom_text(
-    aes(label = round(mean_time, 1)),  
-    vjust = -0.5,                   
-    size = 3
-  ) +
-  labs(
-    title = "Mean work time per week by permit",
-    x = "Permit type",
-    y = "Mean work time per week"
-  ) +
+  labs(title = "Boxplot of AGE for House Owners", x = "", y = "AGE") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  guides(fill = "none")
-
-print(mean_by_permit)
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.line = element_line(color = "black", size = 1.5), 
+    panel.grid = element_blank() 
+  )
 ```
-**Interpretation:**
-	•	Since Permit B and C holders represent the majority of foreign nationals, we compare them to local residents.
-	•	The average weekly working hours for Permit B holders are around 39.8 hours, which is roughly 3 hours more than Swiss residents.
-	•	Permit C holders average around 39 hours per week, about 2.2 hours more than Swiss residents.
 
-Permit B employees often have shorter or fixed-term contracts and must frequently apply for renewals, indicating a motivation to maintain stable employment. Permit C holders, on the other hand, may aim to obtain Swiss citizenship in the future, motivating them to work consistently and demonstrate their value to the country, especially given the complex interview and verification process for naturalization.
+"Tenants" and "Other Situations" exhibit broader age ranges, while "Condominium Owners" and "House Owners" show more consistent distributions.
+
+
+
+### How have the proportions of ownership types and highest education levels changed over the years?
+
+
+ 
+```{r}
+ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = TYPEOFOWNERSHIP)) +
+  geom_bar(position = "fill", color = "black") +
+  scale_fill_brewer(palette = "Set2") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.line = element_line(size = 1.5)
+  ) +
+  labs(
+    title = "Distribution of Ownership Type Over the Years",
+    x = "Year",
+    y = "Proportion"
+  ) +
+  coord_flip()
+```
+
+The age factor does not significantly affect either education or ownership type. However, it should be noted that the data spans only 11 years.
+
+
+```{r}
+ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = HIGHESTCOMPLEDU)) +
+  geom_bar(position = "fill", color = "black") +
+  scale_fill_brewer(palette = "Set3") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.line = element_line(size = 1.5)
+  ) +
+  labs(
+    title = "Distribution of Education Levels Over the Years",
+    x = "Year",
+    y = "Proportion"
+  ) +
+  coord_flip()
+```
+
+From this chart, we can observe that people are increasingly focusing on higher education over time. As shown in the first chart, newer generations concentrate more on higher education.
+
+
+
+### Interplay of Multiple Factors
+
+**Does the combination of education and age groups influence ownership type ?**
+
+
+**Are there distinct patterns of ownership types for individuals with different education levels across various age groups?**
+
+**How do the distributions of ownership types vary when both age group and education level are considered simultaneously?**
+ 
+```{r, warning=FALSE}
+grouped_data <- complete_edu_and_ownership %>%
+  group_by(AGE_GROUP, HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
+  summarise(Count = n()) %>%
+  mutate(Proportion = Count / sum(Count))
+
+ggplot(grouped_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNERSHIP)) +
+  geom_bar(stat = "identity", color = "black") +
+  geom_text(
+    aes(label = scales::percent(Proportion, accuracy = 0.1)), 
+    position = position_stack(vjust = 0.5), 
+    size = 2.3
+  ) +
+  facet_wrap(~ AGE_GROUP, scales = "free") +
+  scale_fill_brewer(palette = "Set3") +
+  labs(
+    title = "Ownership Types by Age Group and Education Level",
+    x = "Age Group",
+    y = "Proportion"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+This trend is expected, as younger individuals are less likely to own property and more likely to rent or have undefined ownership types.
+
+The proportion of Property Owners also increases in older age groups, particularly for mid-to-high education levels.
+
+Higher education levels are associated with an earlier and more significant shift from Tenant to property owner.
+
+"Tenant" remains dominant even in older age groups.
+
+Ownership types transition earlier and more significantly for individuals with higher education levels across all age groups.
+
 
 
 ## Answer to Question
 
+**The relationship between education, generational trends, and home ownership reveals significant patterns in societal development. This report combines insights on higher education, generational behaviors, and future projections to provide a cohesive view of how these factors interact.**
 
-In general, foreigners in Switzerland are less likely to experience this level of flexibility. Many foreign workers are tied to industries and roles that demand fixed schedules, such as construction, hospitality, or manufacturing. These sectors often have less room for negotiation, and foreigners may find themselves working longer or more rigid hours to meet financial obligations.
+-The Impact of Education on Home Ownership:
+**Education level plays a critical role in determining the likelihood of home ownership. Individuals with higher education levels are significantly more likely to own a house compared to those with lower education levels. This trend becomes more pronounced as people age, highlighting the long-term benefits of education in achieving financial stability and home ownership. Among individuals aged 60 and older, those with higher education are more likely to own a house rather than rent, whereas this pattern is less evident among individuals with lower education levels.**
+
+-Generational Shifts in Education and Ownership:
+**Generational differences also influence these patterns. Older generations were more inclined to pursue vocational education, reflecting the economic and societal priorities of their time. In contrast, younger generations are increasingly focusing on higher education, prioritizing advanced qualifications over vocational training. This shift suggests a growing emphasis on education as a pathway to financial success and property ownership.**
+
+-Future Implications:
+**If current trends continue, the younger generation’s focus on higher education could lead to higher home ownership rates in the next 20 years. This projection assumes that the patterns of ownership remain stable, as they have over the past 11 years. However, societal changes in housing markets, economic conditions, or preferences for renting versus owning could alter this trajectory.**
 
 
-# Question : What are the ownership types for different nationalities?
+
+-Conclusion:
+**The relationship between education, generational trends, and house ownership is clear: higher education correlates with increased home ownership, particularly among older individuals. Generational shifts toward higher education suggest the potential for increased home ownership in the future, provided current patterns persist. These findings highlight the evolving role of education in shaping financial stability and housing outcomes across generations.**
+
+**Understanding the interplay between education, generational trends, and housing patterns provides valuable insights for policymakers, educators, and society at large. Supporting education and addressing housing market challenges can pave the way for a more equitable and stable future.**
+
+# What are the ownership types for different nationalities?
 
 ```{r}
 home_owner_data <- merged_data %>% select(SECCITIZENSHIP, TYPEOFOWNERSHIP,
@@ -572,204 +587,222 @@ print(plot3)
 
 - Encourage home ownership Among Larger Families: Provide incentives or assistance to larger families, who demonstrate a greater propensity to own homes.
 
-# Question : How does the level of education affect the type of ownership?***Here is a brief explanation of the TYPEOFOWNERSHIP variable:***
 
 
+# How Does Nationality Impact Workload?
+
+
+In Switzerland, it is common to have part-time employment contracts of 80% or sometimes even 60%. For foreign nationals, this situation may seem unusual. Therefore, one of the hypotheses we investigated is that **foreign nationals might work more hours than local residents.**
+
+
+**Selecting Variables for Chart Building**
 ```{r}
-complete_edu_and_ownership <- merged_data %>%
-  select(HIGHESTCOMPLEDU, AGE_GROUP, TYPEOFOWNERSHIP, YEAR_QUIZ, AGE)
+work_loading_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,TIMEWORKEDPERWEEKSUM, RESIDENTPERMIT)
 ```
+RENTNET: Represents the net rent paid, essential for understanding the financial burden and economic needs of individuals.
 
+NATIONALITYCAT: Distinguishes between foreign nationals and local residents, crucial for comparing work hours and economic conditions.
+
+TIMEWORKEDPERWEEKSUM: Indicates the total weekly work hours, key for analyzing labor patterns across different groups.
+
+RESIDENTPERMIT: Identifies the type of residence permit, important for understanding differences among foreign nationals based on their legal status.
+
+**Filtering Extreme High RENTNET Values and NA**
 ```{r}
-complete_edu_and_ownership <- complete_edu_and_ownership %>%
-  filter(
-    !is.na(HIGHESTCOMPLEDU),
-    !is.na(AGE_GROUP),
-    !is.na(TYPEOFOWNERSHIP)
-  )
+work_loading_data <- work_loading_data %>% filter((RENTNET < 5000 | RENTNET == -8) &
+                                            !is.na(NATIONALITYCAT) &
+                                            !is.na(RESIDENTPERMIT) &
+                                            TIMEWORKEDPERWEEKSUM >= 0)
 ```
-
 ## Plots
 
-### How is ownership type distributed across different education levels?
+### Nationality Distribution
+
+**What is the distribution of the population by nationality?**
 
 ```{r}
-proportions_data <- complete_edu_and_ownership %>%
-  count(HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
-  group_by(HIGHESTCOMPLEDU) %>%
-  mutate(Proportion = n / sum(n)) %>% 
-  arrange(desc(Proportion), .by_group = TRUE)
-
-ggplot(proportions_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(stat = "identity", position = "fill",color = "black") +
-  geom_text(
-    aes(label = scales::percent(Proportion, accuracy = 0.1)),
-    position = position_fill(vjust = 0.5),
-    size = 3
-  ) +
-  scale_fill_brewer(palette = "Set2") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.line = element_line(size = 1)) +
-  labs(
-    title = "Education Level and Ownership Type",
-    x = "Education Level",
-    y = "Proportion"
-  )+
-  coord_flip() 
-
+distribution_categorical(work_loading_data, NATIONALITYCAT, "Nationality")
 ```
+**The chart shows Swiss residents outnumber foreign nationals, but the significant foreign population cannot be ignored.**
 
-Without considering age, renting a house is the most dominant ownership type across all education groups.
+---
 
+### Analysis of Working Hours
 
-### What ownership types are more common in specific age groups? 
+**General overview work time between Swiss and foreign people**
 
-
-
-```{r}
-ggplot(complete_edu_and_ownership, aes(x = AGE_GROUP, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(position = "fill", color = "black") +
-  geom_text(
-    aes(label = scales::percent(..count../tapply(..count.., ..x.., sum)[..x..], accuracy = 0.1)),
-    stat = "count",
-    position = position_fill(vjust = 0.5),
-    size = 3
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), 
-    axis.line = element_line(size = 1.5)
-  ) +
-  scale_fill_brewer(palette = "Set2") + 
-  labs(
-    title = "Age Group and Ownership Type",
-    x = "Ownership Type",
-    y = "Proportion"
-  ) +
-  coord_flip()
-```
-Older individuals are more likely to own property, even without considering the education factor.
-
-
-### Analyzing the age distribution across different ownership types.
-
-```{r}
-complete_edu_and_ownership %>%
-  ggplot(aes(x = TYPEOFOWNERSHIP, y = AGE)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of AGE for House Owners", x = "", y = "AGE") +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(color = "black", size = 1.5), 
-    panel.grid = element_blank() 
-  )
-```
-"Tenants" and "Other Situations" exhibit broader age ranges, while "Condominium Owners" and "House Owners" show more consistent distributions.
-
-
-
-### How have the proportions of ownership types and highest education levels changed over the years?
-
-
- 
-```{r}
-ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(position = "fill", color = "black") +
-  scale_fill_brewer(palette = "Set2") +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(size = 1.5)
-  ) +
-  labs(
-    title = "Distribution of Ownership Type Over the Years",
-    x = "Year",
-    y = "Proportion"
-  ) +
-  coord_flip()
-```
-The age factor does not significantly affect either education or ownership type. However, it should be noted that the data spans only 11 years.
-
-
-```{r}
-ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = HIGHESTCOMPLEDU)) +
-  geom_bar(position = "fill", color = "black") +
-  scale_fill_brewer(palette = "Set3") +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(size = 1.5)
-  ) +
-  labs(
-    title = "Distribution of Education Levels Over the Years",
-    x = "Year",
-    y = "Proportion"
-  ) +
-  coord_flip()
-```
-
-From this chart, we can observe that people are increasingly focusing on higher education over time. As shown in the first chart, newer generations concentrate more on higher education.
-
-
-
-### Interplay of Multiple Factors
-
-**Does the combination of education and age groups influence ownership type ?**
-
-
-**Are there distinct patterns of ownership types for individuals with different education levels across various age groups?**
-
-**How do the distributions of ownership types vary when both age group and education level are considered simultaneously?**
- 
 ```{r, warning=FALSE}
-grouped_data <- complete_edu_and_ownership %>%
-  group_by(AGE_GROUP, HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
-  summarise(Count = n()) %>%
-  mutate(Proportion = Count / sum(Count))
+summary_stats <- work_loading_data %>%
+  group_by(NATIONALITYCAT) %>%
+  summarise(
+    mean_hours = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    median_hours = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    sd_hours = sd(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    min_hours = min(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    max_hours = max(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
+    Q1 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.25, na.rm = TRUE),
+    Q3 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.75, na.rm = TRUE),
+    count = n()
+  )
 
-ggplot(grouped_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(stat = "identity", color = "black") +
-  geom_text(
-    aes(label = scales::percent(Proportion, accuracy = 0.1)), 
-    position = position_stack(vjust = 0.5), 
-    size = 2.3
+work_loading_data %>%
+  filter(!is.na(TIMEWORKEDPERWEEKSUM) & !is.na(NATIONALITYCAT)) %>% 
+  group_by(NATIONALITYCAT) %>% 
+  ggplot(aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
+  geom_boxplot() +
+  stat_summary(
+    fun = median,
+    geom = "text",  
+    aes(label = round(..y.., 1)),  
+    vjust = 0.5,
+    hjust = 6.5,
+    color = "black",  
+    size = 4
   ) +
-  facet_wrap(~ AGE_GROUP, scales = "free") +
-  scale_fill_brewer(palette = "Set3") +
   labs(
-    title = "Ownership Types by Age Group and Education Level",
-    x = "Age Group",
-    y = "Proportion"
+    title = "Comparison of Working Hours by Nationality",
+    x = "Nationality",
+    y = "Weekly Working Hours"
   ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme_minimal()
+
+print(summary_stats)
 ```
 
-This trend is expected, as younger individuals are less likely to own property and more likely to rent or have undefined ownership types.
+**1. Median Weekly Working Hours**
+- **Migrants (Foreign):** Median weekly working time is 41 hours.  
+- **Swiss Residents:** Median weekly working time is 40 hours.  
+- **Implication:**  
+  - This small difference aligns with the hypothesis that migrants might work slightly more on average to meet economic demands.
 
-The proportion of Property Owners also increases in older age groups, particularly for mid-to-high education levels.
+**2. Mean Weekly Working Hours**
+- **Migrants (Foreign):** Average working hours is 37.85.  
+- **Swiss Residents:** Average working hours is 35.61.  
+- **Implication:**  
+  - This supports the idea that migrants tend to work longer hours overall, potentially reflecting the economic disparity between the groups.
 
-Higher education levels are associated with an earlier and more significant shift from Tenant to property owner.
+**3. Spread and Variability**
+- **Standard Deviation:**  
+  - Migrants: 10.76, indicating more consistent working schedules.  
+  - Swiss Residents: 12.63, showing greater variability in working hours.  
+- **First Quartile (Q1):**  
+  - Migrants: 38 hours, reflecting a larger proportion working full-time or near full-time hours.  
+  - Swiss Residents: 29 hours, suggesting more part-time or flexible schedules among locals.
 
-"Tenant" remains dominant even in older age groups.
 
-Ownership types transition earlier and more significantly for individuals with higher education levels across all age groups.
 
+### Rent Analysis from a Financial Perspective
+
+**What is the difference in renting prices between foreigners and locals?** 
+
+```{r}
+work_loading_data %>%
+  distribution_numeric(RENTNET, "Rent Price")
+```
+
+- Both groups have similar rent peaks (~1,500 CHF).  
+- The rent distribution for foreign nationals is more concentrated in the lower rent range.
+- The graph shows a significant increase in density at value 0 for both groups (foreigners and Swiss). This may indicate a large number of listings with zero rent, which may indicate that people have free accommodation or data is missing
+
+```{r}
+rent_analysis <- work_loading_data %>%
+  filter(!is.na(NATIONALITYCAT)) %>%
+  mutate(
+    pays_rent = case_when(
+      RENTNET > 0 ~ "Pays Rent",
+      RENTNET < 1 | is.na(RENTNET) ~ "Does Not Pay Rent"
+    )
+  ) %>%
+  group_by(NATIONALITYCAT, pays_rent) %>%
+  summarise(count = n(), .groups = "drop") %>% 
+  group_by(NATIONALITYCAT) %>% 
+  mutate(percentage = round(count / sum(count) * 100,2)) %>%
+  ungroup()
+
+ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(
+    aes(label = round(percentage, 2)),
+    position = position_dodge(width = 0.9),
+    vjust = -0.5,                    
+    size = 3
+  ) +
+  labs(title = "Distribution of rent payment by nationality categories",
+       x = "Category of nationality",
+       y = "Number",
+       fill = "Rent payment status") +
+  theme_minimal()
+
+print(rent_analysis)
+```
+
+- Swiss residents are more likely not to pay rent, which might indicate higher rates of home ownership or alternative living arrangements among locals.
+
+
+### Analysis Work Time by Permit
+
+```{r}
+distribution_categorical(work_loading_data, RESIDENTPERMIT, "Permit")
+```
+
+**Most foreign nationals primarily hold Permit C (long-term residency), followed by Permit B (short-term residency). Other permit types make up only a small portion of the data set.**
+
+```{r}
+mean_by_permit <- work_loading_data %>% filter(TIMEWORKEDPERWEEKSUM>0) %>% 
+  select(RESIDENTPERMIT, TIMEWORKEDPERWEEKSUM) %>% 
+  group_by(RESIDENTPERMIT) %>% 
+  summarise(mean_time = round(mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE, trim = 0.1), 2), .groups = "drop") %>% 
+  filter(!is.na(RESIDENTPERMIT)) %>% 
+  arrange(desc(mean_time))
+
+ggplot(mean_by_permit, aes(x = reorder(RESIDENTPERMIT, -mean_time), y = mean_time, fill = RESIDENTPERMIT)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = round(mean_time, 1)),  
+    vjust = -0.5,                   
+    size = 3
+  ) +
+  labs(
+    title = "Mean work time per week by permit",
+    x = "Permit type",
+    y = "Mean work time per week"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(fill = "none")
+
+print(mean_by_permit)
+```
+**Interpretation:**
+	•	Since Permit B and C holders represent the majority of foreign nationals, we compare them to local residents.
+	•	The average weekly working hours for Permit B holders are around 39.8 hours, which is roughly 3 hours more than Swiss residents.
+	•	Permit C holders average around 39 hours per week, about 2.2 hours more than Swiss residents.
+
+Permit B employees often have shorter or fixed-term contracts and must frequently apply for renewals, indicating a motivation to maintain stable employment. Permit C holders, on the other hand, may aim to obtain Swiss citizenship in the future, motivating them to work consistently and demonstrate their value to the country, especially given the complex interview and verification process for naturalization.
 
 
 ## Answer to Question
 
-**The relationship between education, generational trends, and home ownership reveals significant patterns in societal development. This report combines insights on higher education, generational behaviors, and future projections to provide a cohesive view of how these factors interact.**
 
--The Impact of Education on Home Ownership:
-**Education level plays a critical role in determining the likelihood of home ownership. Individuals with higher education levels are significantly more likely to own a house compared to those with lower education levels. This trend becomes more pronounced as people age, highlighting the long-term benefits of education in achieving financial stability and home ownership. Among individuals aged 60 and older, those with higher education are more likely to own a house rather than rent, whereas this pattern is less evident among individuals with lower education levels.**
-
--Generational Shifts in Education and Ownership:
-**Generational differences also influence these patterns. Older generations were more inclined to pursue vocational education, reflecting the economic and societal priorities of their time. In contrast, younger generations are increasingly focusing on higher education, prioritizing advanced qualifications over vocational training. This shift suggests a growing emphasis on education as a pathway to financial success and property ownership.**
-
--Future Implications:
-**If current trends continue, the younger generation’s focus on higher education could lead to higher home ownership rates in the next 20 years. This projection assumes that the patterns of ownership remain stable, as they have over the past 11 years. However, societal changes in housing markets, economic conditions, or preferences for renting versus owning could alter this trajectory.**
+In general, foreigners in Switzerland are less likely to experience this level of flexibility. Many foreign workers are tied to industries and roles that demand fixed schedules, such as construction, hospitality, or manufacturing. These sectors often have less room for negotiation, and foreigners may find themselves working longer or more rigid hours to meet financial  obligations.
 
 
 
--Conclusion:
-**The relationship between education, generational trends, and house ownership is clear: higher education correlates with increased home ownership, particularly among older individuals. Generational shifts toward higher education suggest the potential for increased home ownership in the future, provided current patterns persist. These findings highlight the evolving role of education in shaping financial stability and housing outcomes across generations.**
 
-**Understanding the interplay between education, generational trends, and housing patterns provides valuable insights for policymakers, educators, and society at large. Supporting education and addressing housing market challenges can pave the way for a more equitable and stable future.**
+
+
+
+# Summary 
+
+The analysis examines the relationship between education, generational trends, and home ownership in Switzerland, uncovering significant insights into societal and economic patterns. Higher education is a key determinant of home ownership, with individuals holding advanced qualifications significantly more likely to own property, particularly as they age. In contrast, vocational training, while valuable, shows a weaker association with property ownership. Generational shifts reveal that younger individuals prioritize higher education over vocational training, aligning with modern economic demands
+Foreign nationals face notable disparities compared to Swiss residents, with home ownership rates significantly lower (22.4% vs. 50.3%). Migrants from EFTA countries are more likely to own property than those from Africa, Asia, or Oceania, highlighting economic and systemic barriers for certain groups. Furthermore, foreign nationals often work longer hours, predominantly in full-time roles, reflecting financial pressures and less flexibility in employment compared to Swiss residents. Household size also plays a crucial role, as larger families tend to prioritize stability through home ownership.
+
+Looking ahead, the younger generation’s focus on higher education is likely to result in higher home ownership rates in the coming decades, provided current patterns persist. Policymakers are encouraged to address barriers faced by foreign nationals, support larger families through targeted housing policies, and facilitate greater access to higher education. These measures will help create a more equitable and stable future, ensuring that education and employment opportunities translate into tangible benefits, including property ownership, for all residents of Switzerland.
+
+
+
+
+
+
+
+
