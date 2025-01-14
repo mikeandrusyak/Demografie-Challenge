@@ -2,7 +2,7 @@ This script automates the extraction, validation, and analysis of specific varia
 Quick Start Guide:
 
 1. Data Preparation
-	•	Place Excel files in the folder: data/strukturerhebung/.
+	•	Place Excel files in the folder: data/strukturerhebung/{year}_SE_RS_CSV/.
 	•	Ensure file names follow the pattern: do-d-40-se_user-syn-(201[0-9]).xls.
 
 2. Run the Script
@@ -12,7 +12,9 @@ Quick Start Guide:
 	  •	The script generates a presence matrix (result_df) showing if variables are found in each file.
 
 4.	Save Results:
-	  •	Saves variables and matrix as .rds files in questions_answers/nationality_econ_status/.
+	  •	Saves variables and matrix as .rds files in **path_save**.
+	  
+To use different chart set another lists for variables_zp, variables_hh and variables_hhm. Also don't forget change place to save variable lists
 
 
 
@@ -20,6 +22,24 @@ Quick Start Guide:
 library(readxl)
 library(dplyr)
 library(visdat)
+```
+
+```{r}
+variables_zp <- c("HOUSEHOLDYEARLYID", "SECCITIZ", "SECCITIZENSHIP",
+                  "NATIONALITYCAT", "NATIONALITYCONTI","TIMEWORKEDPERWEEKSUM",
+                  "RESIDENTPERMIT","CURRACTIVITYSTATUSIII", "IN_EDUCATION",
+                  "HIGHESTCOMPLEDU","AGE")
+variables_hh <- c("HOUSEHOLDYEARLYID", "TYPEOFOWNERSHIP","SIZEOFPRIVATEHOUSEHOLD","RENTNET")
+variables_hhm <- c("HOUSEHOLDYEARLYID")
+variables_list <- unique(c(variables_zp, variables_hh))
+```
+
+```{r}
+path_save = "Report/data/"
+saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
+saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
+saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
+# saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
 ```
 
 ```{r}
@@ -61,25 +81,6 @@ file_names <- names(all_data) # file names
 sheet_names <- lapply(all_data, names) # sheet names in each file
 ```
 
-
-```{r}
-variables_zp <- c("HOUSEHOLDYEARLYID", "SECCITIZ", "SECCITIZENSHIP",
-                  "NATIONALITYCAT", "NATIONALITYCONTI","TIMEWORKEDPERWEEKSUM", "RESIDENTPERMIT","CURRACTIVITYSTATUSIII",
-                       "CURRACTIVITY_FULL", "CURRACTIVITY_PART",
-                       "CURRACTIVITY_HOME","IN_EDUCATION",
-                       "HIGHESTCOMPLEDU","HIGHESTCOMPLEDUAGGI","AGE","SEX","CURROCCUPATIONISCO")
-variables_hh <- c("HOUSEHOLDYEARLYID", "TYPEOFOWNERSHIP","SIZEOFPRIVATEHOUSEHOLD","RENTNET")
-variables_list <- unique(c(variables_zp, variables_hh))
-```
-
-```{r}
-path_save = "questions_answers/nationality_econ_status/"
-saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
-saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
-saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
-# saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
-```
-
 ```{r}
 # Create an empty data frame to store results with variables as row names
 result_df <- data.frame(matrix(0, nrow = length(variables_zp), ncol = length(file_names)),
@@ -113,14 +114,10 @@ for (file in file_names) {
 ```{r}
 # Convert the matrix to a DataFrame for convenience
 result_df <- as.data.frame(result_df)
-saveRDS(result_df, paste0(path_save,"variables_zp.rds"))
 # Output the result
 print(result_df)
 ```
 
 ```{r}
 vis_value(result_df)
-```
-```{r}
-result_df %>% filter(`do-d-40-se_user-syn-2020.xlsx` == 0) %>% rownames(.)
 ```
