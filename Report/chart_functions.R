@@ -13,6 +13,15 @@ distribution_categorical <- function(df, var, title){
     )
 }
 
+distribution_numeric <- function(df, var, litle_var){
+  df %>% filter(!is.na({{var}})) %>% 
+    ggplot(aes(x = {{var}})) +
+    geom_density(fill = "skyblue", alpha = 0.5) +  
+    facet_grid(. ~ NATIONALITYCAT)+
+    labs(title = paste0("Distribution by ", litle_var), x = "distribution", y = "density") +
+    theme_minimal(base_size = 14)
+} 
+
 decode <- function(df, var, decode_mapping) {
   for (key in names(decode_mapping)) {
     value <- decode_mapping[[key]]
