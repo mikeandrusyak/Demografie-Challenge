@@ -6,7 +6,9 @@ output:
     toc_depth: 3
     number_sections: true
 ---
-# Are Foreign Nationals Working More?
+# Question: Are Foreign Nationals Working More?
+
+
 In Switzerland, it is common to have part-time employment contracts of 80% or sometimes even 60%. For foreign nationals, this situation may seem unusual. Therefore, one of the hypotheses we investigated is that **foreign nationals might work more hours than local residents.**
 
 ## Preparation to work
@@ -59,50 +61,28 @@ selected_data %>%  select(RENTNET) %>% filter(RENTNET < 10) %>% unique()
 selected_data <- decode(selected_data, NATIONALITYCAT, nationality_category)
 selected_data <- decode(selected_data, RESIDENTPERMIT, permit)
 ```
-## Exploring Variable Distributions
-```{r}
-selected_data %>%
-  distribution_numeric(TIMEWORKEDPERWEEKSUM, "Work time per week")
 
-selected_data %>%
-  distribution_numeric(RENTNET, "Rent Price")
-```
 
-### Work Time per Week Distribution
 
-**Observation:**  
-- Foreign nationals show a strong peak around 40 hours per week, indicating a more standardized schedule.
-- Swiss residents also peak at 40 hours but have a flatter distribution, indicating higher variability.
+## Plots
 
----
+### Nationality Distribution
 
-### Rent Distribution (Foreign vs. Swiss)
-
-**Observation:**  
-- Both groups have similar rent peaks (~1,500 CHF).  
-- The rent distribution for foreign nationals is more concentrated in the lower rent range.
-- The graph shows a significant increase in density at value 0 for both groups (foreigners and Swiss). This may indicate a large number of listings with zero rent, which may indicate that people have free accommodation or data is missing
+**What is the distribution of the population by nationality?**
 
 ```{r}
 distribution_categorical(selected_data, NATIONALITYCAT, "Nationality")
-distribution_categorical(selected_data, RESIDENTPERMIT, "Permit")
 ```
-### Nationality Distribution
+**The chart shows Swiss residents outnumber foreign nationals, but the significant foreign population cannot be ignored.**
 
-**Observation:**  
-- Swiss residents form the majority of the dataset.
-- Foreign nationals make up a smaller proportion overall.
+
 
 ---
 
-### Resident Permit Distribution
-
-**Observation:**  
-- Most foreign nationals hold a Permit C (long-term residency), followed by Permit B (short-term residency).
-- Other permit types are relatively negligible in the dataset.
-
 ## Analysis of Working Hours
+
 **General overwiev Worktime between Swiss and forein peopele**
+
 ```{r, warning=FALSE}
 summary_stats <- selected_data %>%
   group_by(NATIONALITYCAT) %>%
@@ -160,7 +140,21 @@ print(summary_stats)
   - Migrants: 38 hours, reflecting a larger proportion working full-time or near full-time hours.  
   - Swiss Residents: 29 hours, suggesting more part-time or flexible schedules among locals.
 
+
+
 ## Rent Analysis from a Financial Perspective
+
+**What is the difference in renting prices between foreigners and locals?** 
+
+```{r}
+selected_data %>%
+  distribution_numeric(RENTNET, "Rent Price")
+```
+
+- Both groups have similar rent peaks (~1,500 CHF).  
+- The rent distribution for foreign nationals is more concentrated in the lower rent range.
+- The graph shows a significant increase in density at value 0 for both groups (foreigners and Swiss). This may indicate a large number of listings with zero rent, which may indicate that people have free accommodation or data is missing
+
 ```{r}
 rent_analysis <- selected_data %>%
   filter(!is.na(NATIONALITYCAT)) %>%
@@ -193,19 +187,17 @@ ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT))
 print(rent_analysis)
 ```
 
-### Rent Payment Proportion
-- **Migrants (Foreign):**  
-  - 73.9% pay rent.  
-  - 26.1% do not pay rent.  
-- **Swiss Residents:**  
-  - 44% pay rent.  
-  - 56% do not pay rent.  
+- Swiss residents are more likely not to pay rent, which might indicate higher rates of home ownership or alternative living arrangements among locals.
 
-### Comparison Between Groups
-- A significantly higher percentage of migrants pay rent compared to Swiss residents (73.9% vs. 44%).  
-- Swiss residents are more likely not to pay rent (56%), which might indicate higher rates of home ownership or alternative living arrangements among locals.
 
 ## Analysis Work Time by Permit
+
+```{r}
+distribution_categorical(selected_data, RESIDENTPERMIT, "Permit")
+```
+
+**Most foreign nationals primarily hold Permit C (long-term residency), followed by Permit B (short-term residency). Other permit types make up only a small portion of the dataset.**
+
 ```{r}
 mean_by_permit <- selected_data %>% filter(TIMEWORKEDPERWEEKSUM>0) %>% 
   select(RESIDENTPERMIT, TIMEWORKEDPERWEEKSUM) %>% 
@@ -240,6 +232,11 @@ Interpretation:
 Permit B employees often have shorter or fixed-term contracts and must frequently apply for renewals, indicating a motivation to maintain stable employment. Permit C holders, on the other hand, may aim to obtain Swiss citizenship in the future, motivating them to work consistently and demonstrate their value to the country, especially given the complex interview and verification process for naturalization.
 
 
-## Conclusion
+## Answer to Question
 
 Based on the analyzed data, foreign nationals in Switzerland tend to work slightly more hours per week compared to local residents. This difference can be attributed to economic motivations, such as the need for higher income, and to the desire of foreign nationals to secure or extend their residence permits.
+
+
+
+
+
