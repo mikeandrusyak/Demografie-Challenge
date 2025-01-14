@@ -39,7 +39,7 @@ source("Renaming_Columns.R")
 ```
 
 ```{r}
-# Завантаження змінних з файлів
+
 path_save = "Report/data/"
 variables_zp <- readRDS(paste0(path_save,"variables_zp.rds"))
 variables_hh <- readRDS(paste0(path_save,"variables_hh.rds"))
@@ -51,7 +51,7 @@ variables_hh <- readRDS(paste0(path_save,"variables_hh.rds"))
 ```
 
 ```{r}
-# Функція для завантаження даних
+
 load_data <- function(year, file_type, variables) {
   file_path <- paste0("data/strukturerhebung/", year, "_SE_RS_CSV/", file_type, year, ".csv")
   
@@ -66,14 +66,14 @@ load_data <- function(year, file_type, variables) {
     data <- data %>% select(any_of(c(variables, "YEAR_QUIZ")))
     return(data)
   } else {
-    message(paste("Файл не знайдено:", file_path))
+    message(paste("File does not exist:", file_path))
     return(NULL)
   }
 }
 ```
 
 ```{r}
-# Завантаження даних для всіх років за два типи файлів
+
 load_all_data <- function(start_year, end_year, file_type, variables) {
   data_list <- list()
   
@@ -89,7 +89,7 @@ load_all_data <- function(start_year, end_year, file_type, variables) {
 ```
 
 ```{r}
-# Функція для уніфікації типів колонок
+
 unify_column_types <- function(data_list) {
   all_columns <- unique(unlist(lapply(data_list, names)))
   

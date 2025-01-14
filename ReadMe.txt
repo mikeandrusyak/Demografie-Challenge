@@ -1,6 +1,6 @@
 
 
-Challenges to Immigrant Integration in Switzerland
+Opportunities for integration through homeownership and their correlation with education level and employment rate
 ===================================================================
 
 Authors: 
@@ -19,8 +19,11 @@ Contents of the Repository:
 
 1. Core Files
 
+**Report/main.Rmd**
+  - Contains all graphs and is a report to the challenge
+
 .gitignore
-- This file specifies intentionally untracked files that Git should ignore. It includes temporary files, logs, and package-specific data.
+  - This file specifies intentionally untracked files that Git should ignore. It includes temporary files, logs, and package-specific data.
 
 Demografie-Challenge.Rproj
 	- The RStudio project file for managing the workspace and configurations for this project.
@@ -33,13 +36,14 @@ renv.lock
 Renaming_Columns.R
 	- An R script version of Renamed_Columns.Rmd for use in automated workflows.
 
-getting_relevant_data.Rmd
-	- An R Markdown file that filters and selects the relevant variables for the analysis.
-- Focuses on extracting meaningful subsets of the data.
+analysing_missing_values.Rmd
+	- File that automatically checks if selected variables exist in all years.
+  - Builds a table and graph to display the presence of variables in the raw data.
+  - Saves the selected list of variables for further work.
 
-merging_data.Rmd
-	- Combines multiple datasets into a unified dataset for further analysis.
-	- Includes steps to ensure data consistency and handle missing values.
+merging_data.Rmd 
+  – Merges multiple data sets into three main sets for further analysis.
+  - Includes steps to ensure data consistency and handle missing values.
 
 -------------------------------------------------------------------
 Steps to Reproduce the Report:
@@ -53,14 +57,20 @@ Steps to Reproduce the Report:
      
 2. Execute the Scripts
 
-Before start of running the script, place the raw data in the “data/strukturerhebung/years_SE_RS_CSV” .
-	-	Start by running the data preparation scripts in the following order:
-	•	merging_data.Rmd
-	-	If needed, use Renaming_Columns.R for batch processing.
+Way 0:
+- Open **main.html** file.
 
-3. View and Analyze the Results
-	-	Intermediate datasets will be saved at each step for debugging and verification.
-	-	Final cleaned data will be ready for visualization and analysis.
+Way 1:
+- Unzip our zip data file (was sent per mail) to folder Report.
+  - Check the path **Report/data/** and here two files **zp_merged_data.csv** and **hh_merged_data.csv**
+- Run **Report/main.Rmd** to get report and charts. 
+- Use knit to regenerate html file.
+
+Way 2:
+Before start of running the script, place the raw data in the “data/strukturerhebung/years_SE_RS_CSV” .
+	- Run **analysing_missing_values.Rmd** to create list of selected variables.
+	- Run **merging_data.Rmd** to generate csv files with used variables.
+	- Run	**Report.main.Rmd** to get final report.
 
 Purpose of the Project:
 
@@ -68,6 +78,7 @@ This repository is part of the Demografie Challenge, which focuses on analyzing 
 	-	Preparing and cleaning demographic data.
 	-	Standardizing datasets for reproducibility.
 	-	Creating a unified dataset for further statistical and visual analysis.
+	- Find answers to researched question.
      
 System Requirements:
 	- 	R version: >= 4.0.0
