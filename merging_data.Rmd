@@ -66,7 +66,7 @@ load_data <- function(year, file_type, variables) {
     data <- data %>% select(any_of(c(variables, "YEAR_QUIZ")))
     return(data)
   } else {
-    message(paste("Файл не знайдено:", file_path))
+    message(paste("File does not exist:", file_path))
     return(NULL)
   }
 }
