@@ -1,3 +1,25 @@
+Purpose
+
+This script automates the process of loading, processing, and merging CSV data files across multiple years. It is designed to standardize and filter data based on predefined variables for further analysis.
+
+Quick Start Guide
+
+1. Data Preparation
+	•	Place CSV files in the folder: data/strukturerhebung/.
+	•	Ensure file names follow the pattern: {year}_SE_RS_CSV/{file_type}{year}.csv.
+	•	Example for household data: 2011_SE_RS_CSV/hhm_2011.csv.
+
+2. Run the Script
+
+Step 1: Load Variables
+	1.	Predefined Variables:
+	•	variables_zp (individual-level variables).
+	•	variables_hh (household-level variables).
+	2.	Load these variables into the script from previously saved .rds files:
+
+
+
+
 ```{r}
 library(dplyr)
 library(readr)
