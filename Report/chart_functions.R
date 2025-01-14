@@ -2,6 +2,7 @@
 distribution_categorical <- function(df, var, title){
   ggplot(df, aes(x = {{ var }})) +
     geom_bar(fill = "lightblue", color = "black") +
+    scale_fill_brewer(palette = "Spectral")+
     ggtitle(paste0("Distribution by ", title)) +
     xlab("Category") +
     ylab("Count") +
@@ -18,6 +19,7 @@ distribution_numeric <- function(df, var, litle_var){
     ggplot(aes(x = {{var}})) +
     geom_density(fill = "skyblue", alpha = 0.5) +  
     facet_grid(. ~ NATIONALITYCAT)+
+    scale_fill_brewer(palette = "Spectral")+
     labs(title = paste0("Distribution by ", litle_var), x = "distribution", y = "density") +
     theme_minimal(base_size = 14)
 } 
@@ -52,8 +54,7 @@ create_proportional_plot <- function(data, group_var, fill_var, y_var, title, x_
       size = 3,
       color = "black"
     ) +
-    scale_y_continuous(labels = scales::percent) + 
-    
+    scale_fill_brewer(palette = "Spectral")+
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1), 
       axis.line = element_line(size = 1.5)

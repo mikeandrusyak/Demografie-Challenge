@@ -67,19 +67,22 @@ merged_data$AGE_GROUP <- cut(
 
 #  How does education level vary with type of employment?
 
-## Extracting only the necessary data
+**Extracting only the necessary data**
 ```{r}
 education_employment_data <- merged_data %>% 
   select(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type, IN_EDUCATION)
-head(education_employment_data)
 ```
+
 **Filter and Clean Data**
 ```{r}
 
 education_employment_data <- education_employment_data %>%
-  mutate(across(where(is.factor), as.character)) %>%
-  filter(if_all(everything(), ~ . != "-9" & . != "-10" & !is.na(.))) %>%
-  mutate(across(where(is.character), as.factor))
+  filter(
+    !is.na(HIGHESTCOMPLEDU),
+    !is.na(AGE_GROUP),
+    !is.na(IN_EDUCATION),
+    !is.na(Employment_Type)
+  )
 ```
 
 ## Plots
@@ -88,14 +91,18 @@ education_employment_data <- education_employment_data %>%
 ### The most frequent education/employment level
   
 **What is the most commonly completed education level and the most common employment type among different generations?**
-
-
-```{r}
+```{r, warning=FALSE}
 heatmap_data <- education_employment_data %>%
+  mutate(HIGHESTCOMPLEDU = factor(
+    HIGHESTCOMPLEDU, 
+    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
+  )) %>%
   count(AGE_GROUP, HIGHESTCOMPLEDU)
+
 ggplot(heatmap_data, aes(x = AGE_GROUP, y = HIGHESTCOMPLEDU, fill = n)) +
   geom_tile(color = "black") + 
-  scale_fill_distiller(palette = "GnBu", direction = 1) +
+  scale_fill_distiller(palette = "GnBu", direction = 1,
+                       labels = scales::comma) +
   labs(
     title = "Age Group and Education Level",
     x = "Age Group",
@@ -119,7 +126,11 @@ heatmap_data <- education_employment_data %>%
 
 ggplot(heatmap_data, aes(x = AGE_GROUP, y = Employment_Type, fill = n)) +
   geom_tile(color = "black") + 
-  scale_fill_distiller(palette = "GnBu", direction = 1) +
+  scale_fill_distiller(
+    palette = "GnBu", 
+    direction = 1, 
+    labels = scales::comma 
+  ) +
   labs(
     title = "Age Group and Employment Type",
     x = "Age Group",
@@ -130,7 +141,7 @@ ggplot(heatmap_data, aes(x = AGE_GROUP, y = Employment_Type, fill = n)) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     axis.line = element_line(color = "black", size = 1.5), 
-    panel.grid = element_blank() 
+    panel.grid = element_blank()
   )
 ```
   
@@ -145,10 +156,17 @@ ggplot(heatmap_data, aes(x = AGE_GROUP, y = Employment_Type, fill = n)) +
 **What proportion of individuals in each age group are still in education?**
 
 ```{r}
+data_with_proportions <- education_employment_data %>%
+  group_by(HIGHESTCOMPLEDU, AGE_GROUP) %>%
+  mutate(Total = n()) %>%
+  group_by(HIGHESTCOMPLEDU, AGE_GROUP, IN_EDUCATION) %>%
+  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop")
 
-education_employment_data %>%
-  ggplot(aes(x = AGE_GROUP, fill = IN_EDUCATION)) +
-  geom_bar(position = "fill") +
+data_with_proportions %>%
+  ggplot(aes(x = AGE_GROUP, y = Proportion, fill = IN_EDUCATION)) +
+  geom_bar(stat = "identity", position = "fill") +
+  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)),
+            position = position_fill(vjust = 0.5), size = 3) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1), 
     axis.line = element_line(size = 1.5)
@@ -162,31 +180,38 @@ education_employment_data %>%
     fill = "Education Status"
   ) + 
   coord_flip()
-  
 ```
+
 **A significant portion of younger individuals are still engaged in continuing education. After the age of 30, most individuals are no longer in education, having completed their formal studies earlier in life.**
 
 ---
- 
- 
+
 ### Employment and Education:
 
 **What percentage of individuals in education are employed full-time, part-time, or unemployed?**
 
 ```{r}
-ggplot(education_employment_data,  aes(x = HIGHESTCOMPLEDU, fill = Employment_Type)) +
-  geom_bar(position = "fill") +
+data_with_proportions <- education_employment_data %>%
+  group_by(AGE_GROUP, HIGHESTCOMPLEDU) %>%  
+  mutate(Total = n()) %>% 
+  group_by(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type) %>% 
+  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop") 
+
+ggplot(data_with_proportions, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = Employment_Type)) +
+  geom_bar(stat = "identity", position = "fill") +
+  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)), 
+            position = position_fill(vjust = 0.5), size = 3) +
   facet_wrap(~AGE_GROUP) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1), 
     axis.line = element_line(size = 1.5)
   ) +
-  scale_fill_brewer(palette = "Spectral")+
+  scale_fill_brewer(palette = "Spectral") +
   labs(
     title = "Distribution of Employment Types by Education Level",
     x = "Education Level",
     y = "Proportion"
-  ) 
+  )
 ```
 
 **As the age group increases, the unemployment rate decreases, and the Full-Time employment rate rises.**
@@ -204,21 +229,15 @@ ggplot(education_employment_data,  aes(x = HIGHESTCOMPLEDU, fill = Employment_Ty
 
 There is a clear link between education level and employment type. **People with higher education are more likely to get full-time jobs and are less likely to be unemployed.**
 
-
-
 **2. Employment Patterns for People in Education**
 
 - **Full-Time Jobs:** As people get older, the number of those with full-time jobs increases.
 - **Part-Time Jobs:** Part-time work is more common, especially for older people and those studying while working.
 - **Unemployment:** Unemployment is higher among young people and those with lower education. However, it decreases as they grow older and finish more education.
 
-
-
 **3. The Future for Younger Generations**
 
 Young people are focusing more on higher education. This will likely help them get better jobs and avoid unemployment in the future. Switzerland supports this trend by providing financial help for people in higher education, showing its dedication to building a well-educated workforce.
-
-
 
 **4. Key Points**
 
@@ -226,7 +245,7 @@ Young people are focusing more on higher education. This will likely help them g
 > **Governments should create ways for young people to combine education with part-time jobs.**  
 > **Supporting education will keep Switzerland’s economy strong in the future.**
 
-# Question : How does the level of education affect the type of ownership?
+# How does the level of education affect the type of ownership?
 
 ***Here is a brief explanation of the TYPEOFOWNERSHIP variable:***
 
@@ -235,7 +254,6 @@ Cooperative Member - Individuals who are members of a housing cooperative.
 Condominium Owner - Owners of an apartment or unit in a building.
 House Owner - Owners of an entire house.
 Other Situations - Includes cases where housing is provided free by a relative or employer, service apartments (e.g., caretaker's apartment), or leased by a tenant.
-
 
 ```{r}
 complete_edu_and_ownership <- merged_data %>%
@@ -257,6 +275,10 @@ complete_edu_and_ownership <- complete_edu_and_ownership %>%
 
 ```{r}
 proportions_data <- complete_edu_and_ownership %>%
+  mutate(HIGHESTCOMPLEDU = factor(
+    HIGHESTCOMPLEDU, 
+    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
+  )) %>%
   count(HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
   group_by(HIGHESTCOMPLEDU) %>%
   mutate(Proportion = n / sum(n)) %>% 
@@ -283,12 +305,9 @@ ggplot(proportions_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFO
 
 Without considering age, renting a house is the most dominant ownership type across all education groups.
 
-
 ### What ownership types are more common in specific age groups? 
 
-
-
-```{r}
+```{r, warning=FALSE}
 ggplot(complete_edu_and_ownership, aes(x = AGE_GROUP, fill = TYPEOFOWNERSHIP)) +
   geom_bar(position = "fill", color = "black") +
   geom_text(
@@ -309,12 +328,12 @@ ggplot(complete_edu_and_ownership, aes(x = AGE_GROUP, fill = TYPEOFOWNERSHIP)) +
   ) +
   coord_flip()
 ```
-Older individuals are more likely to own property, even without considering the education factor.
 
+Older individuals are more likely to own property, even without considering the education factor.
 
 ### Analyzing the age distribution across different ownership types.
 
-```{r}
+```{r, warning=FALSE}
 complete_edu_and_ownership %>%
   ggplot(aes(x = TYPEOFOWNERSHIP, y = AGE)) +
   geom_boxplot() +
@@ -329,15 +348,20 @@ complete_edu_and_ownership %>%
 
 "Tenants" and "Other Situations" exhibit broader age ranges, while "Condominium Owners" and "House Owners" show more consistent distributions.
 
-
-
 ### How have the proportions of ownership types and highest education levels changed over the years?
-
-
  
 ```{r}
-ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(position = "fill", color = "black") +
+data_with_proportions <- complete_edu_and_ownership %>%
+  group_by(YEAR_QUIZ) %>%  
+  mutate(Total = n()) %>%  
+  group_by(YEAR_QUIZ, TYPEOFOWNERSHIP) %>% 
+  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop") %>%
+  ungroup()
+
+ggplot(data_with_proportions, aes(x = YEAR_QUIZ, y = Proportion, fill = TYPEOFOWNERSHIP)) +
+  geom_bar(stat = "identity", position = "fill", color = "black") +
+  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)),
+            position = position_fill(vjust = 0.5), size = 3) +
   scale_fill_brewer(palette = "Set2") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
@@ -353,10 +377,21 @@ ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = TYPEOFOWNERSHIP)) +
 
 The age factor does not significantly affect either education or ownership type. However, it should be noted that the data spans only 11 years.
 
-
 ```{r}
-ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = HIGHESTCOMPLEDU)) +
-  geom_bar(position = "fill", color = "black") +
+data_with_proportions_edu <- complete_edu_and_ownership %>%
+  mutate(HIGHESTCOMPLEDU = factor(
+    HIGHESTCOMPLEDU, 
+    levels = c("Higher Ed", "Higher VET", "Basic VET", "Secondary", "Compulsory", "None")
+  )) %>%
+  group_by(YEAR_QUIZ) %>%
+  mutate(Total = n()) %>% 
+  group_by(YEAR_QUIZ, HIGHESTCOMPLEDU) %>%
+  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop")
+
+ggplot(data_with_proportions_edu, aes(x = YEAR_QUIZ, y = Proportion, fill = HIGHESTCOMPLEDU)) +
+  geom_bar(stat = "identity", position = "fill", color = "black") +
+  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)),
+            position = position_fill(vjust = 0.5), size = 3) +
   scale_fill_brewer(palette = "Set3") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
@@ -372,12 +407,9 @@ ggplot(complete_edu_and_ownership, aes(x = YEAR_QUIZ, fill = HIGHESTCOMPLEDU)) +
 
 From this chart, we can observe that people are increasingly focusing on higher education over time. As shown in the first chart, newer generations concentrate more on higher education.
 
-
-
 ### Interplay of Multiple Factors
 
 **Does the combination of education and age groups influence ownership type ?**
-
 
 **Are there distinct patterns of ownership types for individuals with different education levels across various age groups?**
 
@@ -385,8 +417,12 @@ From this chart, we can observe that people are increasingly focusing on higher 
  
 ```{r, warning=FALSE}
 grouped_data <- complete_edu_and_ownership %>%
+  mutate(HIGHESTCOMPLEDU = factor(
+    HIGHESTCOMPLEDU, 
+    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
+  )) %>%
   group_by(AGE_GROUP, HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
-  summarise(Count = n()) %>%
+  summarise(Count = n(), .groups = "drop_last") %>% 
   mutate(Proportion = Count / sum(Count))
 
 ggplot(grouped_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNERSHIP)) +
@@ -415,8 +451,6 @@ Higher education levels are associated with an earlier and more significant shif
 "Tenant" remains dominant even in older age groups.
 
 Ownership types transition earlier and more significantly for individuals with higher education levels across all age groups.
-
-
 
 ## Answer to Question
 
@@ -457,13 +491,6 @@ home_owner_data <- home_owner_data %>%
 ```
 
 ```{r}
-# Convert SECCITIZENSHIP to character, remove "NA" literal if present
-home_owner_data <- home_owner_data %>%
-  mutate(
-    SECCITIZENSHIP = as.character(SECCITIZENSHIP),
-    SECCITIZENSHIP = na_if(SECCITIZENSHIP, "NA")
-  )
-
 # Define homeownership (Owner vs. Renter)
 home_owner_data <- home_owner_data %>%
   mutate(HOMEOWNERSHIP = case_when(
@@ -471,10 +498,12 @@ home_owner_data <- home_owner_data %>%
     TYPEOFOWNERSHIP %in% c("Tenant", "Other situation") ~ "Renter",
     TRUE ~ NA_character_
   ))
+
+home_owner_data <- home_owner_data %>%
+    filter(
+    !is.na(HOMEOWNERSHIP)
+  )
 ```
-
-
-
 **Group household size**
 ```{r}
 home_owner_data <- home_owner_data %>%
@@ -488,15 +517,10 @@ home_owner_data <- home_owner_data %>%
   ) %>%
   filter(!is.na(SIZEOFPRIVATEHOUSEHOLD_GROUP))
 ```
-
-
-
-
-
 ## Plots
 
 ### Do local Swiss people tend to own a house more than foreigners?
-```{r, warning=FALSE}
+```{r, message=FALSE}
 plot1 <- create_proportional_plot(
   data = home_owner_data,
   group_var = "NATIONALITYCAT",
@@ -511,10 +535,8 @@ print(plot1)
 
 **From this chart, we can understand that local Swiss people tend to have a significantly higher rate of homeownership compared to foreigners. Specifically, Swiss individuals are more likely to own a house or a condominium/apartment (50.3% ownership), while foreigners overwhelmingly tend to rent (77.6%). This indicates a clear difference in housing patterns between Swiss nationals and foreigners.**
 
-
-
 ### What is the distribution of homeownership types by continent of nationality (excluding Switzerland, stateless individuals)?
-```{r}
+```{r, message=FALSE}
 # 8.2 Example: Proportions by Continent of Nationality and Ownership
 plot2 <- create_proportional_plot(
   data = home_owner_data %>%
@@ -530,11 +552,12 @@ plot2 <- create_proportional_plot(
 )
 print(plot2)
 ```
+
 **The chart highlights clear differences in home ownership patterns by continent. Individuals from EFTA countries are more likely to own homes compared to those from Africa, Asia, or Oceania, where tenancy is overwhelmingly common.**
 
 ### What is the proportion of different ownership statuses for people who had or did not have more than one passport?
 
-```{r}
+```{r, message=FALSE}
 # 8.3 Plot: Proportion of Homeownership by Citizenship
 plot1 <- create_proportional_plot(
   data = home_owner_data,
@@ -553,7 +576,7 @@ print(plot1)
 
 ### How does homeownership differ by nationality  and household size?
 
-```{r}
+```{r, warning=FALSE}
 # 8.4 Example of summarizing by household size
 plot3 <- create_proportional_plot(
   data = home_owner_data, 
@@ -580,32 +603,18 @@ print(plot3)
 
 - Household size significantly correlates with home ownership. Larger families, whether Swiss or foreign, are more likely to own homes, likely driven by the need for stability and larger living spaces. This trend suggests that housing policies should consider family size as a critical factor in housing assistance programs.
 
-
 **Recommendations**
 
 - Policy Support for Foreign Residents: Implement targeted housing policies to facilitate foreign residents' access to home ownership, addressing financial and legal barriers.
 
 - Encourage home ownership Among Larger Families: Provide incentives or assistance to larger families, who demonstrate a greater propensity to own homes.
 
-
-
 # How Does Nationality Impact Workload?
-
-
-In Switzerland, it is common to have part-time employment contracts of 80% or sometimes even 60%. For foreign nationals, this situation may seem unusual. Therefore, one of the hypotheses we investigated is that **foreign nationals might work more hours than local residents.**
-
 
 **Selecting Variables for Chart Building**
 ```{r}
 work_loading_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,TIMEWORKEDPERWEEKSUM, RESIDENTPERMIT)
 ```
-RENTNET: Represents the net rent paid, essential for understanding the financial burden and economic needs of individuals.
-
-NATIONALITYCAT: Distinguishes between foreign nationals and local residents, crucial for comparing work hours and economic conditions.
-
-TIMEWORKEDPERWEEKSUM: Indicates the total weekly work hours, key for analyzing labor patterns across different groups.
-
-RESIDENTPERMIT: Identifies the type of residence permit, important for understanding differences among foreign nationals based on their legal status.
 
 **Filtering Extreme High RENTNET Values and NA**
 ```{r}
@@ -623,6 +632,7 @@ work_loading_data <- work_loading_data %>% filter((RENTNET < 5000 | RENTNET == -
 ```{r}
 distribution_categorical(work_loading_data, NATIONALITYCAT, "Nationality")
 ```
+
 **The chart shows Swiss residents outnumber foreign nationals, but the significant foreign population cannot be ignored.**
 
 ---
@@ -650,6 +660,7 @@ work_loading_data %>%
   group_by(NATIONALITYCAT) %>% 
   ggplot(aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
   geom_boxplot() +
+  scale_fill_brewer(palette = "Spectral")+
   stat_summary(
     fun = median,
     geom = "text",  
@@ -727,6 +738,7 @@ ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT))
     vjust = -0.5,                    
     size = 3
   ) +
+  scale_fill_brewer(palette = "Spectral")+
   labs(title = "Distribution of rent payment by nationality categories",
        x = "Category of nationality",
        y = "Number",
@@ -737,7 +749,6 @@ print(rent_analysis)
 ```
 
 - Swiss residents are more likely not to pay rent, which might indicate higher rates of home ownership or alternative living arrangements among locals.
-
 
 ### Analysis Work Time by Permit
 
@@ -762,6 +773,7 @@ ggplot(mean_by_permit, aes(x = reorder(RESIDENTPERMIT, -mean_time), y = mean_tim
     vjust = -0.5,                   
     size = 3
   ) +
+  scale_fill_brewer(palette = "Spectral")+
   labs(
     title = "Mean work time per week by permit",
     x = "Permit type",
@@ -773,24 +785,18 @@ ggplot(mean_by_permit, aes(x = reorder(RESIDENTPERMIT, -mean_time), y = mean_tim
 
 print(mean_by_permit)
 ```
+
 **Interpretation:**
-	•	Since Permit B and C holders represent the majority of foreign nationals, we compare them to local residents.
-	•	The average weekly working hours for Permit B holders are around 39.8 hours, which is roughly 3 hours more than Swiss residents.
-	•	Permit C holders average around 39 hours per week, about 2.2 hours more than Swiss residents.
+
+- Since Permit B and C holders represent the majority of foreign nationals, we compare them to local residents.
+- The average weekly working hours for Permit B holders are around 39.8 hours, which is roughly 3 hours more than Swiss residents.
+- Permit C holders average around 39 hours per week, about 2.2 hours more than Swiss residents.
 
 Permit B employees often have shorter or fixed-term contracts and must frequently apply for renewals, indicating a motivation to maintain stable employment. Permit C holders, on the other hand, may aim to obtain Swiss citizenship in the future, motivating them to work consistently and demonstrate their value to the country, especially given the complex interview and verification process for naturalization.
 
-
 ## Answer to Question
 
-
 In general, foreigners in Switzerland are less likely to experience this level of flexibility. Many foreign workers are tied to industries and roles that demand fixed schedules, such as construction, hospitality, or manufacturing. These sectors often have less room for negotiation, and foreigners may find themselves working longer or more rigid hours to meet financial  obligations.
-
-
-
-
-
-
 
 # Summary 
 

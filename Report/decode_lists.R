@@ -83,7 +83,8 @@ in_edu <- list(
   "0" = "Not In Education",
   "1" = "In Education",
   "-8" = NA,
-  "-9" = NA
+  "-9" = NA,
+  "-10" = NA
 )
 
 activity_status <- list(

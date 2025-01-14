@@ -36,7 +36,11 @@ variables_list <- unique(c(variables_zp, variables_hh))
 
 ```{r}
 path_save = "Report/data/"
-saveRDS(variables_list, paste0(path_save,"nationality_econ_status.rds"))
+
+if (!dir.exists(path_save)) {
+  dir.create(path_save, recursive = TRUE)
+}
+
 saveRDS(variables_zp, paste0(path_save,"variables_zp.rds"))
 saveRDS(variables_hh, paste0(path_save,"variables_hh.rds"))
 # saveRDS(variables_hhm, paste0(path_save,"variables_hhm.rds"))
