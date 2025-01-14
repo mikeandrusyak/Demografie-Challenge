@@ -20,7 +20,6 @@ We are eager to gain a deeper understanding of these aspects and warmly invite y
 ```{r message=FALSE}
 library(dplyr)
 library(ggplot2)
-library(tidyr)
 library(RColorBrewer)
 source("chart_functions.R")
 source("decode_lists.R")
@@ -159,6 +158,10 @@ ggplot(heatmap_data, aes(x = AGE_GROUP, y = Employment_Type, fill = n)) +
 data_with_proportions <- education_employment_data %>%
   group_by(HIGHESTCOMPLEDU, AGE_GROUP) %>%
   mutate(Total = n()) %>%
+  mutate(HIGHESTCOMPLEDU = factor(
+  HIGHESTCOMPLEDU, 
+  levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
+  )) %>%
   group_by(HIGHESTCOMPLEDU, AGE_GROUP, IN_EDUCATION) %>%
   summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop")
 
@@ -194,6 +197,10 @@ data_with_proportions %>%
 data_with_proportions <- education_employment_data %>%
   group_by(AGE_GROUP, HIGHESTCOMPLEDU) %>%  
   mutate(Total = n()) %>% 
+    mutate(HIGHESTCOMPLEDU = factor(
+    HIGHESTCOMPLEDU, 
+    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
+  )) %>%
   group_by(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type) %>% 
   summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop") 
 
@@ -456,21 +463,21 @@ Ownership types transition earlier and more significantly for individuals with h
 
 **The relationship between education, generational trends, and home ownership reveals significant patterns in societal development. This report combines insights on higher education, generational behaviors, and future projections to provide a cohesive view of how these factors interact.**
 
--The Impact of Education on Home Ownership:
-**Education level plays a critical role in determining the likelihood of home ownership. Individuals with higher education levels are significantly more likely to own a house compared to those with lower education levels. This trend becomes more pronounced as people age, highlighting the long-term benefits of education in achieving financial stability and home ownership. Among individuals aged 60 and older, those with higher education are more likely to own a house rather than rent, whereas this pattern is less evident among individuals with lower education levels.**
+- **The Impact of Education on Home Ownership:**
+Education level plays a critical role in determining the likelihood of home ownership. Individuals with higher education levels are significantly more likely to own a house compared to those with lower education levels. This trend becomes more pronounced as people age, highlighting the long-term benefits of education in achieving financial stability and home ownership. Among individuals aged 60 and older, those with higher education are more likely to own a house rather than rent, whereas this pattern is less evident among individuals with lower education levels.
 
--Generational Shifts in Education and Ownership:
-**Generational differences also influence these patterns. Older generations were more inclined to pursue vocational education, reflecting the economic and societal priorities of their time. In contrast, younger generations are increasingly focusing on higher education, prioritizing advanced qualifications over vocational training. This shift suggests a growing emphasis on education as a pathway to financial success and property ownership.**
+- **Generational Shifts in Education and Ownership:**
+Generational differences also influence these patterns. Older generations were more inclined to pursue vocational education, reflecting the economic and societal priorities of their time. In contrast, younger generations are increasingly focusing on higher education, prioritizing advanced qualifications over vocational training. This shift suggests a growing emphasis on education as a pathway to financial success and property ownership.
 
--Future Implications:
-**If current trends continue, the younger generation’s focus on higher education could lead to higher home ownership rates in the next 20 years. This projection assumes that the patterns of ownership remain stable, as they have over the past 11 years. However, societal changes in housing markets, economic conditions, or preferences for renting versus owning could alter this trajectory.**
+- **Future Implications:**
+If current trends continue, the younger generation’s focus on higher education could lead to higher home ownership rates in the next 20 years. This projection assumes that the patterns of ownership remain stable, as they have over the past 11 years. However, societal changes in housing markets, economic conditions, or preferences for renting versus owning could alter this trajectory.
 
 
 
--Conclusion:
-**The relationship between education, generational trends, and house ownership is clear: higher education correlates with increased home ownership, particularly among older individuals. Generational shifts toward higher education suggest the potential for increased home ownership in the future, provided current patterns persist. These findings highlight the evolving role of education in shaping financial stability and housing outcomes across generations.**
+- **Conclusion:**
+The relationship between education, generational trends, and house ownership is clear: higher education correlates with increased home ownership, particularly among older individuals. Generational shifts toward higher education suggest the potential for increased home ownership in the future, provided current patterns persist. These findings highlight the evolving role of education in shaping financial stability and housing outcomes across generations.
 
-**Understanding the interplay between education, generational trends, and housing patterns provides valuable insights for policymakers, educators, and society at large. Supporting education and addressing housing market challenges can pave the way for a more equitable and stable future.**
+- **Understanding the interplay between education, generational trends, and housing patterns provides valuable insights for policymakers, educators, and society at large. Supporting education and addressing housing market challenges can pave the way for a more equitable and stable future.**
 
 # What are the ownership types for different nationalities?
 
@@ -571,7 +578,7 @@ plot1 <- create_proportional_plot(
 print(plot1)
 ```
 
-**From this chart, we can see that people with more than one passport are more likely to own property rather than rent.
+**From this chart, we can see that people with more than one passport are more likely to own property rather than rent.**
 
 
 ### How does homeownership differ by nationality  and household size?
@@ -683,20 +690,18 @@ print(summary_stats)
 **1. Median Weekly Working Hours**
 - **Migrants (Foreign):** Median weekly working time is 41 hours.  
 - **Swiss Residents:** Median weekly working time is 40 hours.  
-- **Implication:**  
-  - This small difference aligns with the hypothesis that migrants might work slightly more on average to meet economic demands.
+- **Implication:** This small difference aligns with the hypothesis that migrants might work slightly more on average to meet economic demands.
 
 **2. Mean Weekly Working Hours**
 - **Migrants (Foreign):** Average working hours is 37.85.  
 - **Swiss Residents:** Average working hours is 35.61.  
-- **Implication:**  
-  - This supports the idea that migrants tend to work longer hours overall, potentially reflecting the economic disparity between the groups.
+- **Implication:**  This supports the idea that migrants tend to work longer hours overall, potentially reflecting the economic disparity between the groups.
 
 **3. Spread and Variability**
 - **Standard Deviation:**  
   - Migrants: 10.76, indicating more consistent working schedules.  
   - Swiss Residents: 12.63, showing greater variability in working hours.  
-- **First Quartile (Q1):**  
+- **First Quarterly (Q1):**  
   - Migrants: 38 hours, reflecting a larger proportion working full-time or near full-time hours.  
   - Swiss Residents: 29 hours, suggesting more part-time or flexible schedules among locals.
 
