@@ -670,10 +670,19 @@ work_loading_data %>%
   scale_fill_brewer(palette = "Spectral")+
   stat_summary(
     fun = median,
-    geom = "text",  
-    aes(label = round(..y.., 1)),  
-    vjust = 0.5,
-    hjust = 6.5,
+    geom = "text",
+    aes(label = paste("Med:", round(..y.., 1))),  
+    vjust = -1.5,
+    hjust = 1.5,
+    color = "black",  
+    size = 4
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "text",
+    aes(label = paste("Mean:",round(..y.., 1))),  
+    vjust = 1.5,
+    hjust = 1.09,
     color = "black",  
     size = 4
   ) +
@@ -764,24 +773,32 @@ distribution_categorical(work_loading_data, RESIDENTPERMIT, "Permit")
 **Most foreign nationals primarily hold Permit C (long-term residency), followed by Permit B (short-term residency). Other permit types make up only a small portion of the data set.**
 
 ```{r}
-mean_by_permit <- work_loading_data %>% filter(TIMEWORKEDPERWEEKSUM>0) %>% 
-  select(RESIDENTPERMIT, TIMEWORKEDPERWEEKSUM) %>% 
-  group_by(RESIDENTPERMIT) %>% 
-  summarise(mean_time = round(mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE, trim = 0.1), 2), .groups = "drop") %>% 
-  filter(!is.na(RESIDENTPERMIT)) %>% 
+mean_by_permit <- work_loading_data %>% 
+  filter(!is.na(TIMEWORKEDPERWEEKSUM) & !is.na(NATIONALITYCAT)) %>% 
+  mutate(
+    PERMIT_GROUP = case_when(
+      RESIDENTPERMIT == "Permit B" ~ "Permit B",
+      RESIDENTPERMIT == "Permit C" ~ "Permit C",
+      RESIDENTPERMIT == "Swiss" ~ "Swiss",
+      TRUE ~ "Others" # Всі інші дозволи об'єднуємо в групу "Others"
+    )
+  ) %>% 
+  select(PERMIT_GROUP, TIMEWORKEDPERWEEKSUM) %>% 
+  group_by(PERMIT_GROUP) %>% 
+  summarise(mean_time = round(mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE), 2), .groups = "drop") %>% 
   arrange(desc(mean_time))
 
-ggplot(mean_by_permit, aes(x = reorder(RESIDENTPERMIT, -mean_time), y = mean_time, fill = RESIDENTPERMIT)) +
+ggplot(mean_by_permit, aes(x = reorder(PERMIT_GROUP, -mean_time), y = mean_time, fill = PERMIT_GROUP)) +
   geom_bar(stat = "identity") +
   geom_text(
     aes(label = round(mean_time, 1)),  
     vjust = -0.5,                   
     size = 3
   ) +
-  scale_fill_brewer(palette = "Spectral")+
+  scale_fill_brewer(palette = "Set2") +
   labs(
-    title = "Mean work time per week by permit",
-    x = "Permit type",
+    title = "Mean work time per week by permit group",
+    x = "Permit group",
     y = "Mean work time per week"
   ) +
   theme_minimal() +

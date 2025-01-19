@@ -2,10 +2,12 @@
 distribution_categorical <- function(df, var, title){
   ggplot(df, aes(x = {{ var }})) +
     geom_bar(fill = "lightblue", color = "black") +
-    scale_fill_brewer(palette = "Spectral")+
+    geom_text(stat = "count", aes(label = ..count..), vjust = -0.3, size = 4) + # Регулювання відступу тексту
+    scale_y_continuous(labels = scales::comma) + # Повертаємо звичайний числовий формат
     ggtitle(paste0("Distribution by ", title)) +
     xlab("Category") +
     ylab("Count") +
+    expand_limits(y = max(table(df[[deparse(substitute(var))]])) * 1.1) + # Додаємо 10% до верхньої межі
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, size = 10), 
       axis.text.y = element_text(size = 10),                       
