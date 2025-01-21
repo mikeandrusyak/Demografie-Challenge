@@ -1,0 +1,4 @@
+body {
+    overflow: scroll; /* Kaydırılabilir alan bırakır */
+    scrollbar-width: none; /* Firefox için kaydırma çubuğunu gizler */
+}

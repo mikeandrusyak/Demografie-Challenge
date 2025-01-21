@@ -1,0 +1,21 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;  
+}
+
+body {
+    height: 300px; /* Header yüksekliği */
+    background: url('images/flag.avif') no-repeat center center;
+    background-size: cover; /* Görseli header alanına sığdır */
+    background-color: #c8d8d8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white; /* Yazı rengini beyaz yap */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6); /* Yazıya gölge ekle */
+}
+
+h1 {
+    font-size: 2.5rem; /* Başlık boyutu */
+    color: red;
+}

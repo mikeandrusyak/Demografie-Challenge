@@ -1,0 +1,88 @@
+/* General styles for the body */
+body {
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(120deg, #ffffff, #ffffff);
+    color: #333;
+    width: 700px;
+}
+
+/* Container styling */
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Heading styles */
+h4 {
+    font-family: 'Lobster', cursive;
+    font-size: 18px;
+    color: #000000;   
+}
+
+h1 {
+    font-family: 'Lobster', cursive;
+    font-size: 36px;
+    color: #444;
+    text-align: center;
+    border-top: 2px solid #000000;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 10px;
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+
+/* Paragraph styling */
+p {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 17px;
+    line-height: 1.8;
+    margin-bottom: 20px;
+    color: #000000;
+}
+
+
+/* Blockquote styling */
+blockquote {
+    margin: 20px 0;
+    padding: 20px;
+    background: #e8f4ff;
+    border-left: 6px solid #007BFF;
+    font-style: italic;
+    font-size: 16px;
+    color: #333;
+}
+
+
+/* Image container styling */
+.image-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.image-container img {
+    max-width: 100%;
+    height: 900;
+    border-radius: 5px;
+}
+
+/* Styling for links (if added in future) */
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+
+body {
+    overflow: hidden; /* Sayfanın taşmasını gizler */
+}

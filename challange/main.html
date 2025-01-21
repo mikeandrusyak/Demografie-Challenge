@@ -1,0 +1,94 @@
+
+
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Blog</title>
+            <style>
+                /* Genel stil */
+                body {
+                    display: flex;
+                    margin: 0;
+                    font-family: Arial, sans-serif;
+                    background-color: #ffffff;
+                }
+                /* Sidebar için stil */
+        /* Sidebar için stil */
+        .sidebar {
+            width: 10px; /* Başlangıç genişliği */
+            height: 100%;
+            background-color: #f4f4f4;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transition: width 0.3s ease; /* Geçiş efekti */
+            overflow: hidden; /* İçeriğin taşmasını gizle */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Fareyle üzerine gelindiğinde genişleme */
+        .sidebar:hover {
+            width: 200px; /* Genişletilmiş boyut */
+        }
+
+        /* Sidebar içeriği */
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar ul li {
+            padding: 15px;
+        }
+
+        .sidebar ul li a {
+            text-decoration: none;
+            color: #333;
+            display: block;
+        }
+                /* İçerik alanı için stil */
+                .content {
+                    flex-grow: 1;
+                    padding: 10px;
+                }
+                iframe {
+                    width: 100%;
+                    border: none;
+                }
+                
+                
+
+            </style>
+        </head>
+        <body>
+            <div class="sidebar">
+                <ul>
+                    <li><a href="#header">Start </a></li>
+                    <li><a href="#yaren">Yaren </a></li>
+                    <li><a href="#harman">Yaren </a></li>
+                </ul>
+            </div>
+        
+            <div class="content">
+                <div id="header">
+                    <iframe src="header.html" height="300px"></iframe>
+                </div>
+                <div id="start">
+                    <iframe src="start.html" height="400px"></iframe>
+                </div>
+        
+                <div id="yaren" style="margin-top: 20px;">
+                    <iframe src="yaren.html" height="4000px"></iframe>
+                </div>
+
+                <div id="harman" style="margin-top: 20px;">
+                    <iframe src="harman.html" height="4000px"></iframe>
+                </div>
+            </div>
+        </body>
+        </html>
+        
