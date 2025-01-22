@@ -1,5 +1,5 @@
 ---
-title: "Opportunities for integration through homeownership and their correlation with education level and employment rate"
+title: "Education, Equality, and Ownership: Unveiling the Hidden Truths in Switzerland"
 output: 
   html_document:
     toc: true
@@ -7,37 +7,45 @@ output:
     toc_depth: 3
     number_sections: true
 ---
-**Why this topic**
-Our team consists of immigrants, and we place great importance on the process of integration. It is crucial for us to meet the high standards of Switzerland, a country that has provided us with valuable opportunities in exchange for honest work, tax contributions, and successful examples of integration.
 
-We consider purchasing a home to be one of the key milestones in the integration process. Therefore, we have decided to analyze the factors that contribute to a successful home purchase and those that can increase its likelihood. These factors may include the successful completion of education or long-term full-time employment.
+![swiss_map](images/swiss_map.png)
+Moving to a new country is both exciting and challenging, and Switzerland, with its high living standards and fair economic opportunities, is no exception. However, for many foreigners, the question remains: Are these opportunities truly equal for everyone?
+Education, employment, and property ownership are critical factors that shape quality of life. Yet, social differences, particularly for foreign nationals, play a significant role in accessing these opportunities.
+This article explores key questions such as: Does higher education genuinely lead to a more comfortable life? Do foreigners in Switzerland have the same chances for employment and property ownership as citizens?
+By addressing these questions, we aim to provide both a thoughtful analysis and a reflection of the shared experiences of those striving to build a better life in Switzerland.
 
-We are eager to gain a deeper understanding of these aspects and warmly invite you to join us in this endeavor.
+Let’s begin with our first question: 
 
 
-# Data Preparation
-**Loading Libraries, Functions, and Decoding Info**
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
 ```{r message=FALSE}
+# Data Preparation
+# Loading Libraries, Functions, and Decoding Info
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 source("chart_functions.R")
 source("decode_lists.R")
 ```
-**Loading data**
+
 ```{r}
+# Loading data
 zp_merged_data <- read.csv("data/zp_merged_data.csv")  # individual-level data
 hh_merged_data <- read.csv("data/hh_merged_data.csv")  # household-level data
 ```
-**Merging the Data sets**
+
 ```{r}
-# Merge datasets (household-level + individual-level)
+# Merging the Data sets
 merged_data <- hh_merged_data %>%
   left_join(zp_merged_data, by = c("HOUSEHOLDYEARLYID" = "HOUSEHOLDYEARLYID",
                                    "YEAR_QUIZ" = "YEAR_QUIZ"))
 ```
-**Decoding the data**
+
 ```{r}
+# Decoding the data
 merged_data <- decode(merged_data, HIGHESTCOMPLEDU, education_level)
 merged_data <- decode(merged_data, IN_EDUCATION, in_edu)
 merged_data <- decode(merged_data, CURRACTIVITYSTATUSIII, activity_status)
@@ -52,29 +60,35 @@ merged_data <- decode(merged_data, NATIONALITYCONTI, nationality_conti)
 merged_data <- merged_data %>% 
   mutate(Employment_Type = as.factor(CURRACTIVITYSTATUSIII))
 ```
-**Creating Age groups**
+
 ```{r}
+# Creating Age groups
 merged_data$AGE_GROUP <- cut(
   merged_data$AGE,
-  breaks = c(15, 20, 35, 50, Inf), 
+  breaks = c(15, 25, 40, 55, Inf), 
   right = FALSE, 
-  labels = c("Teen", "Young Adult", "Adult", "Mature Adult")
+  labels = c("15-25", "25-40", "40-55", "55 +")
 )
 ```
 
-
-
-#  How does education level vary with type of employment?
-
-**Extracting only the necessary data**
 ```{r}
-education_employment_data <- merged_data %>% 
-  select(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type, IN_EDUCATION)
+merged_data <- merged_data %>%
+  mutate(TYPEOFOWNERSHIP = case_when(
+    TYPEOFOWNERSHIP %in% c("Condominium owner", "House owner") ~ "Owner",
+    TYPEOFOWNERSHIP %in% c("Tenant") ~ "Renter",
+    TYPEOFOWNERSHIP == "Other situation" ~ "Other situation",
+    TRUE ~ NA_character_))
 ```
 
-**Filter and Clean Data**
-```{r}
 
+```{r}
+# Extracting only the necessary data
+education_employment_data <- merged_data %>% 
+  select(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type, IN_EDUCATION, YEAR_QUIZ)
+```
+
+```{r}
+# Filter and Clean Data
 education_employment_data <- education_employment_data %>%
   filter(
     !is.na(HIGHESTCOMPLEDU),
@@ -83,309 +97,17 @@ education_employment_data <- education_employment_data %>%
     !is.na(Employment_Type)
   )
 ```
+#  Does Education Influence Employment?
 
-## Plots
+life. But is this assumption accurate? Can pursuing higher education truly lead to a lifestyle that allows for more time with loved ones and hobbies?
 
- 
-### The most frequent education/employment level
-  
-**What is the most commonly completed education level and the most common employment type among different generations?**
-```{r, warning=FALSE}
-heatmap_data <- education_employment_data %>%
-  mutate(HIGHESTCOMPLEDU = factor(
-    HIGHESTCOMPLEDU, 
-    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
-  )) %>%
-  count(AGE_GROUP, HIGHESTCOMPLEDU)
+The answer to this question is valuable to us, as the result may help us choose a path in life depending on our perspective. That’s why we want to examine this question more closely.
 
-ggplot(heatmap_data, aes(x = AGE_GROUP, y = HIGHESTCOMPLEDU, fill = n)) +
-  geom_tile(color = "black") + 
-  scale_fill_distiller(palette = "GnBu", direction = 1,
-                       labels = scales::comma) +
-  labs(
-    title = "Age Group and Education Level",
-    x = "Age Group",
-    y = "Education Level",
-    fill = "Frequency"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(color = "black", size = 1.5), 
-    panel.grid = element_blank()
-  )
-```
+First, let’s take a closer look at the Swiss education system. In many cantons, students aged 14-15 face a big choice after lower secondary school. Some quarters pressure children to pursue the general education route for prestige reasons. Most pupils on this track attend a Swiss high school and take the Swiss Baccalaureate, which prepares them for university. [(source)](https://www.swissinfo.ch/eng/sci-tech/the-swiss-education-system-explained/48148948)
 
-**Basic Vocational Education and Training is the most commonly completed education level across all age groups. However, younger generations tend to focus more on pursuing higher education, reflecting a shift towards advanced qualifications in recent years.**
- 
-
+The education system in Switzerland is flexible. Now, let's look at how it has changed over the years.
 ```{r}
-heatmap_data <- education_employment_data %>%
-  count(AGE_GROUP, Employment_Type)
-
-ggplot(heatmap_data, aes(x = AGE_GROUP, y = Employment_Type, fill = n)) +
-  geom_tile(color = "black") + 
-  scale_fill_distiller(
-    palette = "GnBu", 
-    direction = 1, 
-    labels = scales::comma 
-  ) +
-  labs(
-    title = "Age Group and Employment Type",
-    x = "Age Group",
-    y = "Employment Type",
-    fill = "Frequency"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(color = "black", size = 1.5), 
-    panel.grid = element_blank()
-  )
-```
-  
-**People start to concentrate on work when they reach 30 Year Age.**
-
-**People mostly prefer to work Full-Time**
- 
----
-
-### Analyzing the people on education
-
-**What proportion of individuals in each age group are still in education?**
-
-```{r}
-data_with_proportions <- education_employment_data %>%
-  group_by(HIGHESTCOMPLEDU, AGE_GROUP) %>%
-  mutate(Total = n()) %>%
-  mutate(HIGHESTCOMPLEDU = factor(
-  HIGHESTCOMPLEDU, 
-  levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
-  )) %>%
-  group_by(HIGHESTCOMPLEDU, AGE_GROUP, IN_EDUCATION) %>%
-  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop")
-
-data_with_proportions %>%
-  ggplot(aes(x = AGE_GROUP, y = Proportion, fill = IN_EDUCATION)) +
-  geom_bar(stat = "identity", position = "fill") +
-  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)),
-            position = position_fill(vjust = 0.5), size = 3) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), 
-    axis.line = element_line(size = 1.5)
-  ) +
-  facet_wrap(~HIGHESTCOMPLEDU) +
-  scale_fill_brewer(palette = "Set2") + 
-  labs(
-    title = "Age Group and Education Status",
-    x = "Age",
-    y = "Proportion",
-    fill = "Education Status"
-  ) + 
-  coord_flip()
-```
-
-**A significant portion of younger individuals are still engaged in continuing education. After the age of 30, most individuals are no longer in education, having completed their formal studies earlier in life.**
-
----
-
-### Employment and Education:
-
-**What percentage of individuals in education are employed full-time, part-time, or unemployed?**
-
-```{r}
-data_with_proportions <- education_employment_data %>%
-  group_by(AGE_GROUP, HIGHESTCOMPLEDU) %>%  
-  mutate(Total = n()) %>% 
-    mutate(HIGHESTCOMPLEDU = factor(
-    HIGHESTCOMPLEDU, 
-    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
-  )) %>%
-  group_by(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type) %>% 
-  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop") 
-
-ggplot(data_with_proportions, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = Employment_Type)) +
-  geom_bar(stat = "identity", position = "fill") +
-  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)), 
-            position = position_fill(vjust = 0.5), size = 3) +
-  facet_wrap(~AGE_GROUP) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), 
-    axis.line = element_line(size = 1.5)
-  ) +
-  scale_fill_brewer(palette = "Spectral") +
-  labs(
-    title = "Distribution of Employment Types by Education Level",
-    x = "Education Level",
-    y = "Proportion"
-  )
-```
-
-**As the age group increases, the unemployment rate decreases, and the Full-Time employment rate rises.**
-
-**Higher education levels increase employment rates and reduce unemployment.**
-
-**Part-Time employment is more common, especially among older age groups and at certain education levels.**
-
----
-
-## Answer to Question
-
-
-**1. Link Between Education Level and Employment**
-
-There is a clear link between education level and employment type. **People with higher education are more likely to get full-time jobs and are less likely to be unemployed.**
-
-**2. Employment Patterns for People in Education**
-
-- **Full-Time Jobs:** As people get older, the number of those with full-time jobs increases.
-- **Part-Time Jobs:** Part-time work is more common, especially for older people and those studying while working.
-- **Unemployment:** Unemployment is higher among young people and those with lower education. However, it decreases as they grow older and finish more education.
-
-**3. The Future for Younger Generations**
-
-Young people are focusing more on higher education. This will likely help them get better jobs and avoid unemployment in the future. Switzerland supports this trend by providing financial help for people in higher education, showing its dedication to building a well-educated workforce.
-
-**4. Key Points**
-
-> **Higher education helps people find jobs and lowers unemployment.**  
-> **Governments should create ways for young people to combine education with part-time jobs.**  
-> **Supporting education will keep Switzerland’s economy strong in the future.**
-
-# How does the level of education affect the type of ownership?
-
-***Here is a brief explanation of the TYPEOFOWNERSHIP variable:***
-
-Tenant - Individuals renting an apartment or house.
-Cooperative Member - Individuals who are members of a housing cooperative.
-Condominium Owner - Owners of an apartment or unit in a building.
-House Owner - Owners of an entire house.
-Other Situations - Includes cases where housing is provided free by a relative or employer, service apartments (e.g., caretaker's apartment), or leased by a tenant.
-
-```{r}
-complete_edu_and_ownership <- merged_data %>%
-  select(HIGHESTCOMPLEDU, AGE_GROUP, TYPEOFOWNERSHIP, YEAR_QUIZ, AGE)
-```
-
-```{r}
-complete_edu_and_ownership <- complete_edu_and_ownership %>%
-  filter(
-    !is.na(HIGHESTCOMPLEDU),
-    !is.na(AGE_GROUP),
-    !is.na(TYPEOFOWNERSHIP)
-  )
-```
-
-## Plots
-
-### How is ownership type distributed across different education levels?
-
-```{r}
-proportions_data <- complete_edu_and_ownership %>%
-  mutate(HIGHESTCOMPLEDU = factor(
-    HIGHESTCOMPLEDU, 
-    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
-  )) %>%
-  count(HIGHESTCOMPLEDU, TYPEOFOWNERSHIP) %>%
-  group_by(HIGHESTCOMPLEDU) %>%
-  mutate(Proportion = n / sum(n)) %>% 
-  arrange(desc(Proportion), .by_group = TRUE)
-
-ggplot(proportions_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(stat = "identity", position = "fill",color = "black") +
-  geom_text(
-    aes(label = scales::percent(Proportion, accuracy = 0.1)),
-    position = position_fill(vjust = 0.5),
-    size = 3
-  ) +
-  scale_fill_brewer(palette = "Set2") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.line = element_line(size = 1)) +
-  labs(
-    title = "Education Level and Ownership Type",
-    x = "Education Level",
-    y = "Proportion"
-  )+
-  coord_flip() 
-
-```
-
-Without considering age, renting a house is the most dominant ownership type across all education groups.
-
-### What ownership types are more common in specific age groups? 
-
-```{r, warning=FALSE}
-ggplot(complete_edu_and_ownership, aes(x = AGE_GROUP, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(position = "fill", color = "black") +
-  geom_text(
-    aes(label = scales::percent(..count../tapply(..count.., ..x.., sum)[..x..], accuracy = 0.1)),
-    stat = "count",
-    position = position_fill(vjust = 0.5),
-    size = 3
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), 
-    axis.line = element_line(size = 1.5)
-  ) +
-  scale_fill_brewer(palette = "Set2") + 
-  labs(
-    title = "Age Group and Ownership Type",
-    x = "Ownership Type",
-    y = "Proportion"
-  ) +
-  coord_flip()
-```
-
-Older individuals are more likely to own property, even without considering the education factor.
-
-### Analyzing the age distribution across different ownership types.
-
-```{r, warning=FALSE}
-complete_edu_and_ownership %>%
-  ggplot(aes(x = TYPEOFOWNERSHIP, y = AGE)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of AGE for House Owners", x = "", y = "AGE") +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(color = "black", size = 1.5), 
-    panel.grid = element_blank() 
-  )
-```
-
-"Tenants" and "Other Situations" exhibit broader age ranges, while "Condominium Owners" and "House Owners" show more consistent distributions.
-
-### How have the proportions of ownership types and highest education levels changed over the years?
- 
-```{r}
-data_with_proportions <- complete_edu_and_ownership %>%
-  group_by(YEAR_QUIZ) %>%  
-  mutate(Total = n()) %>%  
-  group_by(YEAR_QUIZ, TYPEOFOWNERSHIP) %>% 
-  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop") %>%
-  ungroup()
-
-ggplot(data_with_proportions, aes(x = YEAR_QUIZ, y = Proportion, fill = TYPEOFOWNERSHIP)) +
-  geom_bar(stat = "identity", position = "fill", color = "black") +
-  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)),
-            position = position_fill(vjust = 0.5), size = 3) +
-  scale_fill_brewer(palette = "Set2") +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(size = 1.5)
-  ) +
-  labs(
-    title = "Distribution of Ownership Type Over the Years",
-    x = "Year",
-    y = "Proportion"
-  ) +
-  coord_flip()
-```
-
-The age factor does not significantly affect either education or ownership type. However, it should be noted that the data spans only 11 years.
-
-```{r}
-data_with_proportions_edu <- complete_edu_and_ownership %>%
+data_with_proportions_edu <- education_employment_data %>%
   mutate(HIGHESTCOMPLEDU = factor(
     HIGHESTCOMPLEDU, 
     levels = c("Higher Ed", "Higher VET", "Basic VET", "Secondary", "Compulsory", "None")
@@ -405,25 +127,172 @@ ggplot(data_with_proportions_edu, aes(x = YEAR_QUIZ, y = Proportion, fill = HIGH
     axis.line = element_line(size = 1.5)
   ) +
   labs(
-    title = "Distribution of Education Levels Over the Years",
+    title = "Level of Highest Education Over the Years",
     x = "Year",
     y = "Proportion"
   ) +
   coord_flip()
 ```
 
-From this chart, we can observe that people are increasingly focusing on higher education over time. As shown in the first chart, newer generations concentrate more on higher education.
+From the charts, it is shown that vocational education remains popular across generations due to its ability to prepare individuals for the workforce at an early age. According to [work.swiss](https://www.arbeit.swiss/secoalv/en/home/menue/stellensuchende/berufliche-mobilitaet-in-der-eu-efta---eures/aus-und-weiterbildung.html) These programs offer both theoretical knowledge and practical skills, enabling young people to start their careers earlier and achieve financial independence which is an amazing and unique education type that doesn’t exist in most countries. However, we also observe that with years people are starting to focus more on higher education. So, what could be the reason for this shift?
 
-### Interplay of Multiple Factors
+**Could it be that new generations focus on higher education to enjoy more leisure time in the future?**
 
-**Does the combination of education and age groups influence ownership type ?**
+This perspective suggests they may seek higher education to secure jobs with better work-life balance and flexibility.
 
-**Are there distinct patterns of ownership types for individuals with different education levels across various age groups?**
+In contrast, university graduates generally spend more time pursuing advanced qualifications, leading to delayed workforce entry. Despite this delay, their higher earning potential can enable them to work fewer hours while maintaining a comparable or even higher standard of living. This trend suggests that the extended education period may provide long-term benefits in terms of work-life balance.
 
-**How do the distributions of ownership types vary when both age group and education level are considered simultaneously?**
- 
+Examining these dynamics requires an analysis of employment trends, income levels, and work-life balance across educational backgrounds to determine whether people with higher education truly experience greater flexibility and fewer working hours in their professional lives. 
+
+Now, let’s take a closer look at the chart, which provides a detailed analysis of employment types by education levels across different generations.
+
+```{r}
+data_with_proportions <- education_employment_data %>%
+  group_by(AGE_GROUP, HIGHESTCOMPLEDU) %>%  
+  mutate(Total = n()) %>% 
+    mutate(HIGHESTCOMPLEDU = factor(
+    HIGHESTCOMPLEDU, 
+    levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
+  )) %>%
+  group_by(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type) %>% 
+  summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop") 
+
+ggplot(data_with_proportions, aes(x = AGE_GROUP, y = Proportion, fill = Employment_Type)) +
+  geom_bar(stat = "identity", position = "fill") +
+  geom_text(aes(label = scales::percent(Proportion, accuracy = 1)), 
+            position = position_fill(vjust = 0.5), size = 3) +
+  facet_wrap(~HIGHESTCOMPLEDU) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    axis.line = element_line(size = 1.5)
+  ) +
+  scale_fill_brewer(palette = "Spectral") +
+  labs(
+    title = "Distribution of Employment Types by Education Level",
+    x = "Education Level",
+    y = "Proportion",
+    fill = "Employment Type"
+  )
+```
+According to this chart, we can see that education level has a significant impact on employment. Individuals with lower education levels have much lower employment rates compared to those with VET or higher education. This indicates that the income earned by individuals with lower education levels is sufficient for them to maintain their lives at their current employment level.
+
+We initially thought that highly educated individuals would have lower employment rates and achieve better work-life balance, but this assumption turned out to be incorrect. According to data from [admin.ch](https://www.bfs.admin.ch/asset/en/30226036), we found that people with higher education earn significantly more and can afford better living conditions while working less compared to those with lower education levels. In this case, working more becomes a personal preference for highly educated individuals. 
+
+The reason for working extensively may not be just to have more free time in the future. Some highly educated individuals may have different perspective of life. Perhaps you’ve heard of the term workaholic, which simply means being addicted to work or power they reached. I believe this may explain why highly educated individuals, even those over the age of 55, have higher rates of working full-time compared to 55+ year-olds in other education levels, despite having higher earning potential. Their inability to stop working may be rooted in an addiction to productivity and achievement.
+
+This is, of course, a significant psychological factor, but we want to place a greater focus on the material aspect.
+
+The desire for property ownership may also be a reason for pursuing higher education. To better understand the connection between education level and property ownership, we ask the following question:
+
+
+
+
+
+# Is There a Link Between Higher Education and Property Ownership?
+
+```{r}
+complete_edu_and_ownership <- merged_data %>%
+  select(HIGHESTCOMPLEDU, AGE_GROUP, TYPEOFOWNERSHIP, YEAR_QUIZ, AGE)
+```
+
+```{r}
+complete_edu_and_ownership <- complete_edu_and_ownership %>%
+  filter(
+    !is.na(HIGHESTCOMPLEDU),
+    !is.na(AGE_GROUP),
+    !is.na(TYPEOFOWNERSHIP)
+  )
+```
+
+While examining the relationship between property ownership and education, it’s equally important to consider the influence of time. Economic shifts over the years have profoundly impacted homeownership rates in Switzerland.
+
+As a group of individuals from different nationalities, we all agree that buying a house is much harder now from a global perspective. We assume that this trend has similarly affected Switzerland.
+
+[According to Raphaël Gabella](https://www.swissinfo.ch/eng/workplace-switzerland/owning-a-home-becomes-increasingly-difficult-in-switzerland/77500922), (CIFI)
+
+***“Whatever your age, it’s getting more and more complicated. Prices have more than doubled in 25 years. But salaries have risen by 30-40% in 25-30 years. The rules for granting credit are also increasingly restrictive,”***
+
+These challenges highlight the growing gap between income levels and property prices, making home ownership a more difficult goal for today’s population compared to previous generations. However, the data below reveals an unexpected outcome.
+
+![index_ownership](images/index_ownership.png)
+
+According to the information from the [Swiss Federal Statistical Office (BFS)](https://www.bfs.admin.ch/bfs/en/home/statistics/construction-housing/dwellings/housing-conditions/tenants-owners.html), it is shown that, contrary to expectations, homeownership rates in Switzerland have actually increased over the years.
+
+This increase could potentially be attributed to earlier generations, who were able to purchase homes more easily due to favorable economic conditions at the time, and subsequently passed these properties down to their descendants, thereby contributing to the rise in home ownership rates today.
+
+Besides considering the years, examining the connection between age and home ownership can help us understand how different life stages, financial stability, and generational factors influence the ability to own property. 
+
+From the previous charts, we observed that age has a strong correlation with education level and employment type. Based on this, it is reasonable to predict a deep correlation between age and property ownership as well.  Now, we will take a closer look at the relationship between age and homeownership using boxplots. The median values are particularly important because they represent the middle point of the data, providing a clearer indication of what is typical, as they are not affected by outliers. Therefore, our focus here will be on medians.
+
+```{r, warning=FALSE}
+summary_table <- complete_edu_and_ownership %>%
+  group_by(TYPEOFOWNERSHIP) %>%
+  summarise(
+    mean_age = mean(AGE, na.rm = TRUE),
+    median_age = median(AGE, na.rm = TRUE)
+  )
+
+complete_edu_and_ownership %>%
+  ggplot(aes(x = TYPEOFOWNERSHIP, y = AGE, fill = TYPEOFOWNERSHIP)) +
+  geom_boxplot(outlier.shape = 16, outlier.size = 2) +
+  geom_text(
+    data = summary_table,
+    aes(
+      x = TYPEOFOWNERSHIP,
+      y = mean_age,
+      label = paste0("Mean: ", round(mean_age, 1))
+    ),
+    color = "black",
+    vjust = -2.5,
+    size = 3
+  ) +
+  geom_text(
+    data = summary_table,
+    aes(
+      x = TYPEOFOWNERSHIP,
+      y = median_age,
+      label = paste0("Median: ", round(median_age, 1))
+    ),
+    color = "black",
+    vjust = 1.5,
+    size = 3
+  ) +
+  labs(
+    title = "The Relationship Between Age and Ownership Status",
+    x = "",
+    y = "AGE"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.line = element_line(color = "black", size = 1.5),
+    panel.grid = element_blank()
+  ) +
+  scale_fill_brewer(palette = "Set3")
+```
+The boxplots provide evidence to support this idea. The median values demonstrate that older individuals are more likely to own property, which is not surprising. Additionally, the shorter length of the owner plot indicates that the age variation among property owners is smaller compared to other groups. On the other hand, younger generations may prioritize work-life balance and flexible career paths over property ownership, preferring to rent instead.
+
+The reason older generations have high home ownership rates might also be their preference for staying in one place. According to the information from [Neighborhood Rio Rancho](https://www.neighborhoodriorancho.com/article/what-challenges-do-older-adults-face-when-moving/), as people age, moving away from their current location becomes more challenging due to psychological and physical factors. As a result, they tend to prefer living in a stable and permanent location. We do not expect this trend to change significantly in the coming years.
+
+We also observe that the "Other Situation" category, where individuals live with their families or in inherited homes, has a lower median age of 30 and shows more variation in ages. This could be due to passing down property to future generations. Inherited homes make it easier for younger people to become home owners and help explain the rise in ownership rates despite higher house prices.
+
+After observing the impact of age on ownership type, we can explore whether the likelihood of owning a home increase with age depending on individuals' education levels. 
+
+As observed in previous charts, Age significantly affects education, employment, and property ownership. Younger individuals still completing their education and entering the workforce are excluded from this analysis, as their data is incomplete.
+
+**Can education be the key to achieving home ownership?**
+
+From my perspective as someone from an Asian country, higher education is considered extremely important, and most people tend to follow the same path of pursuing a bachelor’s degree. This belief is driven by the idea that it is the only way to achieve our dreams and become homeowners, even if our strengths lie outside traditional academic learning—and, in many cases, it truly is the only way. Similarly, I believe that education levels play a significant role in homeownership opportunities in Switzerland.
+
+That’s why I found it fascinating that vocational education and training (VET) is so popular in Switzerland. In my country, higher education is often seen as the most important factor for financial success, whereas in Switzerland, it seems that VET education might play a similar role. As previously mentioned, VET-trained individuals enter the workforce at a much younger age. By beginning their careers sooner, they can start accumulating savings and planning for major investments like property ownership well before their highly educated counterparts. Given the differences I have observed in my own country, I am particularly interested in exploring the distinctions between VET and higher education in greater detail.
+
+In the chart below, we will seek to answer this question:
+
+** Does the type of education truly influence the likelihood and timing of property ownership?**
+
 ```{r, warning=FALSE}
 grouped_data <- complete_edu_and_ownership %>%
+filter(AGE_GROUP != "15-25") %>% 
   mutate(HIGHESTCOMPLEDU = factor(
     HIGHESTCOMPLEDU, 
     levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
@@ -449,44 +318,40 @@ ggplot(grouped_data, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = TYPEOFOWNER
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-This trend is expected, as younger individuals are less likely to own property and more likely to rent or have undefined ownership types.
+Our findings reveal an intriguing pattern among young adults and adults with varying education levels. Individuals with lower education, especially those who have completed vocational education and training (VET), are more likely to own homes at a younger age. Their earlier entry into the workforce allows them to build financial resources and achieve stability sooner.  The chart indicates that highly educated individuals eventually catch-up VET-educated counterparts in homeownership rates after gaining significant work experience, but VET-educated individuals continue to maintain relatively high homeownership rates across all age groups. This also explains the popularity of VET programs in Switzerland. 
 
-The proportion of Property Owners also increases in older age groups, particularly for mid-to-high education levels.
+At the same time, the charts show that individual's high education have lower ownership rates, particularly during the [prime working years of their careers (ages 25-55)](https://www.oecd.org/en/data/indicators/employment-rate-by-age-group.html#:~:text=Employment%20rates%20are%20shown%20for,of%20their%20career%20and%20approaching).
 
-Higher education levels are associated with an earlier and more significant shift from Tenant to property owner.
+The results show that in Switzerland, you don’t have to focus solely on higher education to own a house. You can still become a homeowner by doing a job you enjoy—perhaps even more easily.
 
-"Tenant" remains dominant even in older age groups.
+The relatively low ownership rates among highly educated adults, which we did not expect, raise an important question:
 
-Ownership types transition earlier and more significantly for individuals with higher education levels across all age groups.
+**If property ownership is the primary goal, is pursuing a bachelor’s or university degree in Switzerland truly worth it? And why have people increasingly started to focus on higher education?**
 
-## Answer to Question
+Of course, education is not solely about gaining free time or owning property. It enhances an individual’s self-esteem and is considered a fundamental aspect of personal growth and fulfilment for many. However, combining the intrinsic benefits of education with greater opportunities for property ownership and an improved work-life balance would be the ideal scenario.
 
-**The relationship between education, generational trends, and home ownership reveals significant patterns in societal development. This report combines insights on higher education, generational behaviors, and future projections to provide a cohesive view of how these factors interact.**
+Additionally, technological changes and economic transformations, particularly the effects of automation and digitalization on reducing job opportunities in some sectors, may impact the career prospects of VET graduates. According to [CNN](https://edition.cnn.com/2024/06/20/business/ai-jobs-workers-replacing/index.html) More than half (61%) of large firms plan to use AI within the next year to automate tasks previously done by employees.
 
-- **The Impact of Education on Home Ownership:**
-Education level plays a critical role in determining the likelihood of home ownership. Individuals with higher education levels are significantly more likely to own a house compared to those with lower education levels. This trend becomes more pronounced as people age, highlighting the long-term benefits of education in achieving financial stability and home ownership. Among individuals aged 60 and older, those with higher education are more likely to own a house rather than rent, whereas this pattern is less evident among individuals with lower education levels.
+At the same time, it could be argued that individuals with VET education are less focused on pursuing ambitious career advancements compared to university graduates. As a result, they may experience less geographical or job mobility, allowing them to remain in their current locations for longer periods. This stability could increase their likelihood of becoming home owners.
 
-- **Generational Shifts in Education and Ownership:**
-Generational differences also influence these patterns. Older generations were more inclined to pursue vocational education, reflecting the economic and societal priorities of their time. In contrast, younger generations are increasingly focusing on higher education, prioritizing advanced qualifications over vocational training. This shift suggests a growing emphasis on education as a pathway to financial success and property ownership.
+**So, which other factors influence homeownership?**
 
-- **Future Implications:**
-If current trends continue, the younger generation’s focus on higher education could lead to higher home ownership rates in the next 20 years. This projection assumes that the patterns of ownership remain stable, as they have over the past 11 years. However, societal changes in housing markets, economic conditions, or preferences for renting versus owning could alter this trajectory.
+After examining the role of education, we wanted to explore whether being a foreigner has an impact on property ownership. As you may have noticed, Switzerland has a remarkably high proportion of foreign residents (30%). 
 
+According to data from [NCCR On The Move](https://nccr-onthemove.ch/indicators/what-is-the-proportion-of-foreign-born-populations-in-switzerland-and-europe/) , Switzerland ranks third in Europe for its foreign-born population. As foreign individuals, this aspect is particularly relevant and worth further investigation.
 
+![europe_map](images/Europe_map.png)
+As evident from the migrant and local population graph, the foreign population in Switzerland is significantly high and plays a crucial role in shaping the dynamics of homeownership. This factor cannot be overlooked in our analysis and is particularly interesting for our multicultural team.
 
-- **Conclusion:**
-The relationship between education, generational trends, and house ownership is clear: higher education correlates with increased home ownership, particularly among older individuals. Generational shifts toward higher education suggest the potential for increased home ownership in the future, provided current patterns persist. These findings highlight the evolving role of education in shaping financial stability and housing outcomes across generations.
+Now that we understand the importance of the foreign population, we can ask this question: 
 
-- **Understanding the interplay between education, generational trends, and housing patterns provides valuable insights for policymakers, educators, and society at large. Supporting education and addressing housing market challenges can pave the way for a more equitable and stable future.**
-
-# What are the ownership types for different nationalities?
+# How does nationality influence homeownership rates in Switzerland?
 
 ```{r}
 home_owner_data <- merged_data %>% select(SECCITIZENSHIP, TYPEOFOWNERSHIP,
     SIZEOFPRIVATEHOUSEHOLD, NATIONALITYCAT, NATIONALITYCONTI
   )
 ```
-**Decoding Data**
 
 ```{r}
 home_owner_data <- home_owner_data %>%
@@ -498,21 +363,7 @@ home_owner_data <- home_owner_data %>%
 ```
 
 ```{r}
-# Define homeownership (Owner vs. Renter)
-home_owner_data <- home_owner_data %>%
-  mutate(HOMEOWNERSHIP = case_when(
-    TYPEOFOWNERSHIP %in% c("Condominium owner", "House owner") ~ "Owner",
-    TYPEOFOWNERSHIP %in% c("Tenant", "Other situation") ~ "Renter",
-    TRUE ~ NA_character_
-  ))
-
-home_owner_data <- home_owner_data %>%
-    filter(
-    !is.na(HOMEOWNERSHIP)
-  )
-```
-**Group household size**
-```{r}
+# Group household size
 home_owner_data <- home_owner_data %>%
   mutate(
     SIZEOFPRIVATEHOUSEHOLD_GROUP = case_when(
@@ -524,9 +375,13 @@ home_owner_data <- home_owner_data %>%
   ) %>%
   filter(!is.na(SIZEOFPRIVATEHOUSEHOLD_GROUP))
 ```
-## Plots
 
-### Do local Swiss people tend to own a house more than foreigners?
+Homeownership is a cornerstone of financial security, social stability, and personal investment. In Switzerland, where foreign residents make up one of the highest proportions in Europe. 
+
+This analysis aims to answer a key question: How does nationality influence homeownership rates in Switzerland, and what systemic factors drive the disparities observed? 
+
+As foreigners, we often have to work harder to achieve the goals we aspire to in Switzerland, and this effort extends to homeownership as well. According to the [Swiss Federal Statistical Office (FSO)](https://www.bfs.admin.ch/bfs/en/home/statistics/construction-housing.html), foreign nationals experience significantly lower homeownership rates compared to Swiss citizens. By examining the chart, we can gain a deeper understanding of how nationality and Swiss residency status influence different types of homeownerships.  
+
 ```{r, message=FALSE}
 plot1 <- create_proportional_plot(
   data = home_owner_data,
@@ -540,9 +395,12 @@ plot1 <- create_proportional_plot(
 print(plot1)
 ```
 
-**From this chart, we can understand that local Swiss people tend to have a significantly higher rate of homeownership compared to foreigners. Specifically, Swiss individuals are more likely to own a house or a condominium/apartment (50.3% ownership), while foreigners overwhelmingly tend to rent (77.6%). This indicates a clear difference in housing patterns between Swiss nationals and foreigners.**
+The data reveals a stark divide between Swiss nationals and foreign residents in homeownership. While 50.3% of Swiss citizens own property (comprising house and condominium ownership), a striking 77.6% of foreign residents remain tenants. In contrast, only 19.7% of foreign residents have achieved homeownership, highlighting significant disparities in property access. Additionally, foreign residents are more likely to fall under the "Other situation" category (2.7%) compared to Swiss nationals (4.2%), which may reflect further instability or alternative living arrangements.
 
-### What is the distribution of homeownership types by continent of nationality (excluding Switzerland, stateless individuals)?
+We believe foreign residents face considerable challenges when it comes to homeownership. Restrictive legal rules, limited financial options, and tougher credit requirements make the process far more difficult. To us, this clearly shows how deeply nationality impacts housing inequality and limits access to stable living opportunities. 
+
+Having understood that foreign individuals face more challenges in becoming homeowners compared to Swiss nationals, let us now analyze these foreign individuals in greater detail. Switzerland, as a European country, shares more similarities with other European nations than with countries from other regions. In this context, it is believed that European individuals have a relatively easier path to homeownership. Furthermore, according to information from [ch.ch](https://www.ch.ch/en/housing/homeownership/buying-property/purchasing-property-in-switzerland-as-a-foreign-na) the conditions for buying property vary for individuals from different countries. For citizens of EU countries, they are granted the same rights as Swiss nationals when purchasing a house. 
+
 ```{r, message=FALSE}
 # 8.2 Example: Proportions by Continent of Nationality and Ownership
 plot2 <- create_proportional_plot(
@@ -560,35 +418,24 @@ plot2 <- create_proportional_plot(
 print(plot2)
 ```
 
-**The chart highlights clear differences in home ownership patterns by continent. Individuals from EFTA countries are more likely to own homes compared to those from Africa, Asia, or Oceania, where tenancy is overwhelmingly common.**
+This chart on homeownership by continent highlights significant disparities across different regions. For instance, residents from **Africa** exhibit the highest proportion of tenants, with **91.1%** renting rather than owning property. Similarly, **Asia** also shows a high tenancy rate at **81.7%**, while ownership (house or condominium) remains relatively low. 
 
-### What is the proportion of different ownership statuses for people who had or did not have more than one passport?
+In contrast, **EFTA member states** (e.g., Switzerland, Norway) and **EU member states** demonstrate significantly higher homeownership rates, with **29.4%** and **13.3%** house ownership, respectively. These regions also exhibit a larger share of condominium ownership compared to other continents, reflecting possibly easier access to property markets due to stronger economic integration or legal benefits. 
 
-```{r, message=FALSE}
-# 8.3 Plot: Proportion of Homeownership by Citizenship
-plot1 <- create_proportional_plot(
-  data = home_owner_data,
-  group_var = "SECCITIZENSHIP",
-  fill_var = "HOMEOWNERSHIP",
-  y_var = "proportion",
-  title = "Types of Ownership Among People with Multiple Passports",
-  x_label = "Had Multiple Passport",
-  y_label = "Proportion"
-)
-print(plot1)
-```
+**North America** and **Latin America** show somewhat balanced distributions, with tenant proportions of **72.7%** and **74.7%**, respectively. Notably, **Oceania** stands out with a relatively higher rate of homeownership (house and condominium combined, **29.1%**), while the tenancy rate remains lower than Africa or Asia at **68.1%**. 
 
-**From this chart, we can see that people with more than one passport are more likely to own property rather than rent.**
+Lastly, individuals from **Other Europe** regions, outside of EU and EFTA membership, have the highest proportion of tenants at **86.2%**, reflecting economic or legal barriers that limit their access to ownership opportunities. 
 
+Are there other significant factors influencing homeownership? We believe that individuals living with large families are more likely to become homeowners. This could be because larger family units often prioritize stability and long-term investments, such as owning a home, to accommodate their needs. 
 
-### How does homeownership differ by nationality  and household size?
+Now, let us delve deeper into this situation to explore whether there is indeed a relationship between the number of individuals in a family and homeownership rates. Additionally, we will examine whether this relationship varies across different nationalities, providing further insight into how cultural and economic factors may influence these trends. 
 
 ```{r, warning=FALSE}
 # 8.4 Example of summarizing by household size
 plot3 <- create_proportional_plot(
   data = home_owner_data, 
   group_var = "NATIONALITYCAT",
-  fill_var = "HOMEOWNERSHIP",
+  fill_var = "TYPEOFOWNERSHIP",
   y_var = "proportion", 
   title = "Homeownership by Nationality and Household Size",
   x_label = "Nationality",
@@ -598,136 +445,33 @@ plot3 <- create_proportional_plot(
 print(plot3)
 ```
 
-**People with larger families tend to own a house more often, both among locals and foreigners.**
+From the Homeownership by Nationality and Household Size chart, we can see that, among households with four or more members, a clear disparity emerges: while 64% of Swiss nationals in this group own their homes, only 26.2% of foreign households achieve the same. Even in single-member households, Swiss nationals are significantly more likely to own a home (26.8%) compared to foreign residents, where ownership drops to just 9.1%. However, in both cases, larger households show higher homeownership rates compared to single-member households, suggesting that family size plays a significant role in the likelihood of owning a home, regardless of nationality. 
 
-## Answer to question
+From these charts, we assume that nationality significantly impacts homeownership rates in Switzerland. Swiss nationals benefit from more favorable conditions, such as easier access to credit and fewer legal restrictions, while foreign residents face systemic barriers that limit their opportunities. Additionally, larger Swiss households appear to leverage pooled resources for property investment, whereas foreign families seem less able to do so, likely due to financial instability or exclusion. These disparities suggest that both structural and cultural factors play a crucial role in shaping housing access. 
 
-- Swiss nationals exhibit a significantly higher rate of home ownership compared to foreigners. This stark difference underscores the barriers that foreigners may face in entering the housing market, including legal, financial, and cultural factors.
+The disparities in homeownership rates have profound implications for Switzerland’s future. Addressing these inequities requires systemic reform. Legal barriers that restrict foreign residents from purchasing property must be reconsidered, and credit restrictions need to be eased to provide equitable access to financing. Additionally, targeted incentives for first-time buyers—especially those from migrant backgrounds—could foster greater social integration and economic stability. 
 
-- Foreign residents from EFTA countries demonstrate a significantly higher likelihood of owning homes. This trend may be attributed to similar economic conditions, cultural affinities, or easier access to financing within this group.
+Ultimately, fostering an equitable housing market is about more than just fairness. It’s about building a society where everyone, regardless of nationality, can achieve stability and invest in their future. By addressing systemic barriers, Switzerland can create a more inclusive and resilient housing market, ensuring that homeownership becomes an attainable goal for all its residents. 
 
-- In contrast, home ownership is much less common among individuals from Africa, Asia, or Oceania. This suggests potential economic or systemic challenges, such as lower income levels, limited access to credit, or administrative barriers that may disproportionately affect these groups.
 
-- Household size significantly correlates with home ownership. Larger families, whether Swiss or foreign, are more likely to own homes, likely driven by the need for stability and larger living spaces. This trend suggests that housing policies should consider family size as a critical factor in housing assistance programs.
+# The Impact of Restrictions on Foreign Nationals Regarding Housing and Workload
 
-**Recommendations**
-
-- Policy Support for Foreign Residents: Implement targeted housing policies to facilitate foreign residents' access to home ownership, addressing financial and legal barriers.
-
-- Encourage home ownership Among Larger Families: Provide incentives or assistance to larger families, who demonstrate a greater propensity to own homes.
-
-# How Does Nationality Impact Workload?
-
-**Selecting Variables for Chart Building**
 ```{r}
+# Selecting Variables for Chart Building
 work_loading_data <- merged_data %>% select(RENTNET,NATIONALITYCAT,TIMEWORKEDPERWEEKSUM, RESIDENTPERMIT)
 ```
 
-**Filtering Extreme High RENTNET Values and NA**
 ```{r}
+# Filtering Extreme High RENTNET Values and NA
 work_loading_data <- work_loading_data %>% filter((RENTNET < 5000 | RENTNET == -8) &
                                             !is.na(NATIONALITYCAT) &
                                             !is.na(RESIDENTPERMIT) &
                                             TIMEWORKEDPERWEEKSUM >= 0)
 ```
-## Plots
 
-### Nationality Distribution
+As mentioned earlier, foreigners in Switzerland often encounter certain obstacles on their path to purchasing property. Despite relatively high salaries compared to many other countries, the cost of real estate here remains among the highest in Europe, and legal constraints further complicate the buying process for those without a Swiss passport. Consequently, **a significant number of foreigners end up renting for an extended period.** According to [Swissinfo](https://www.swissinfo.ch/eng/business/making-ends-meet_how-far-do-6-000-francs-really-get-you-in-switzerland/43666358?utm_source=chatgpt.com), an average of 20–30% of a person’s monthly income goes toward housing. It’s no surprise, then, that those who can’t afford their own place end up spending a noticeable portion of their budget on rent.
 
-**What is the distribution of the population by nationality?**
-
-```{r}
-distribution_categorical(work_loading_data, NATIONALITYCAT, "Nationality")
-```
-
-**The chart shows Swiss residents outnumber foreign nationals, but the significant foreign population cannot be ignored.**
-
----
-
-### Analysis of Working Hours
-
-**General overview work time between Swiss and foreign people**
-
-```{r, warning=FALSE}
-summary_stats <- work_loading_data %>%
-  group_by(NATIONALITYCAT) %>%
-  summarise(
-    mean_hours = mean(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    median_hours = median(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    sd_hours = sd(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    min_hours = min(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    max_hours = max(TIMEWORKEDPERWEEKSUM, na.rm = TRUE),
-    Q1 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.25, na.rm = TRUE),
-    Q3 = quantile(TIMEWORKEDPERWEEKSUM, probs = 0.75, na.rm = TRUE),
-    count = n()
-  )
-
-work_loading_data %>%
-  filter(!is.na(TIMEWORKEDPERWEEKSUM) & !is.na(NATIONALITYCAT)) %>% 
-  group_by(NATIONALITYCAT) %>% 
-  ggplot(aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
-  geom_boxplot() +
-  scale_fill_brewer(palette = "Spectral")+
-  stat_summary(
-    fun = median,
-    geom = "text",
-    aes(label = paste("Med:", round(..y.., 1))),  
-    vjust = -1.5,
-    hjust = 1.5,
-    color = "black",  
-    size = 4
-  ) +
-  stat_summary(
-    fun = mean,
-    geom = "text",
-    aes(label = paste("Mean:",round(..y.., 1))),  
-    vjust = 1.5,
-    hjust = 1.09,
-    color = "black",  
-    size = 4
-  ) +
-  labs(
-    title = "Comparison of Working Hours by Nationality",
-    x = "Nationality",
-    y = "Weekly Working Hours"
-  ) +
-  theme_minimal()
-
-print(summary_stats)
-```
-
-**1. Median Weekly Working Hours**
-- **Migrants (Foreign):** Median weekly working time is 41 hours.  
-- **Swiss Residents:** Median weekly working time is 40 hours.  
-- **Implication:** This small difference aligns with the hypothesis that migrants might work slightly more on average to meet economic demands.
-
-**2. Mean Weekly Working Hours**
-- **Migrants (Foreign):** Average working hours is 37.85.  
-- **Swiss Residents:** Average working hours is 35.61.  
-- **Implication:**  This supports the idea that migrants tend to work longer hours overall, potentially reflecting the economic disparity between the groups.
-
-**3. Spread and Variability**
-- **Standard Deviation:**  
-  - Migrants: 10.76, indicating more consistent working schedules.  
-  - Swiss Residents: 12.63, showing greater variability in working hours.  
-- **First Quarterly (Q1):**  
-  - Migrants: 38 hours, reflecting a larger proportion working full-time or near full-time hours.  
-  - Swiss Residents: 29 hours, suggesting more part-time or flexible schedules among locals.
-
-
-
-### Rent Analysis from a Financial Perspective
-
-**What is the difference in renting prices between foreigners and locals?** 
-
-```{r}
-work_loading_data %>%
-  distribution_numeric(RENTNET, "Rent Price")
-```
-
-- Both groups have similar rent peaks (~1,500 CHF).  
-- The rent distribution for foreign nationals is more concentrated in the lower rent range.
-- The graph shows a significant increase in density at value 0 for both groups (foreigners and Swiss). This may indicate a large number of listings with zero rent, which may indicate that people have free accommodation or data is missing
+In **Chart “Distribution of rent payment by nationality categories”**, you can see a comparison of homeownership versus renting in two groups: Swiss citizens and all foreign nationals. Pay attention to how the percentage of homeowners differs between these categories: the proportion of homeowners is traditionally higher among locals, while among migrants, renting dominates.
 
 ```{r}
 rent_analysis <- work_loading_data %>%
@@ -758,19 +502,51 @@ ggplot(rent_analysis, aes(x = pays_rent, y = percentage, fill = NATIONALITYCAT))
        y = "Number",
        fill = "Rent payment status") +
   theme_minimal()
-
-print(rent_analysis)
 ```
 
-- Swiss residents are more likely not to pay rent, which might indicate higher rates of home ownership or alternative living arrangements among locals.
+This demonstrates that foreigners often require sufficient income to cover monthly expenses. One solution is to work longer hours or even hold multiple jobs. This highlights the connection between nationality and workload, supporting the hypothesis that foreigners tend to work more than the local population—a perspective shaped by both my own experience and that of my colleagues. 
 
-### Analysis Work Time by Permit
+**More Hours per Week—A Minor Difference or a Substantial Burden?** 
 
-```{r}
-distribution_categorical(work_loading_data, RESIDENTPERMIT, "Permit")
+To verify whether foreigners truly work more, we prepared **Chart “Comparison of Working Hours by Nationality”**, where we compared the average and median number of working hours for two groups: “Swiss” (Swiss citizens) and “Foreigners” (migrants). 
+
+```{r, warning=FALSE}
+work_loading_data %>%
+  filter(!is.na(TIMEWORKEDPERWEEKSUM) & !is.na(NATIONALITYCAT)) %>% 
+  group_by(NATIONALITYCAT) %>% 
+  ggplot(aes(x = NATIONALITYCAT, y = TIMEWORKEDPERWEEKSUM, fill = NATIONALITYCAT)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Spectral")+
+  stat_summary(
+    fun = median,
+    geom = "text",
+    aes(label = paste("Med:", round(..y.., 1))),  
+    vjust = -1.5,
+    hjust = 1.5,
+    color = "black",  
+    size = 4
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "text",
+    aes(label = paste("Mean:",round(..y.., 1))),  
+    vjust = 1.5,
+    hjust = 1.09,
+    color = "black",  
+    size = 4
+  ) +
+  labs(
+    title = "Comparison of Working Hours by Nationality",
+    x = "Nationality",
+    y = "Weekly Working Hours"
+  ) +
+  theme_minimal()
 ```
+It clearly shows that migrants on average work about one hour longer at the median, and around 2.2 hours longer when looking at the mean. At first glance, one or two extra hours per week may seem trivial. But over the course of a year, that can amount to nearly 115 additional working hours, which equates to about five extra working days (a full working week!). Even such small shifts in the balance can, over time, affect health, leisure, or family life. 
 
-**Most foreign nationals primarily hold Permit C (long-term residency), followed by Permit B (short-term residency). Other permit types make up only a small portion of the data set.**
+Yet economic need alone—i.e., “earning more”—is not the only explanation for why foreigners tend to work overtime. According to [SEM (State Secretariat for Migration)](https://www.sem.admin.ch/sem/en/home/themen/arbeit/nicht-eu_efta-angehoerige/grundlagen_zur_arbeitsmarktzulassung.html), there is a hierarchical priority in Switzerland requiring employers to first consider Swiss nationals, EU/EFTA citizens, or those who already have certain residence permits granting expanded work rights. 
+
+According to the data from the [Foreign Population and Asylum Statistics 2022](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.sem.admin.ch/dam/sem/en/data/publiservice/statistik/bestellung/auslaender-asylstatistik-2022.pdf.download.pdf/auslaender-asylstatistik-2022-e.pdf&ved=2ahUKEwihkt_a2YaLAxW50gIHHQo7OMgQFnoECBYQAQ&usg=AOvVaw2FoomEPpvIH8jEBykFVMSo) (SEM, page 20), most migrants in Switzerland hold residence permits of categories B and C, while the rest we group under “Others”. For a more detailed analysis, we will examine the average number of hours worked per week for these groups compared to the local population.  
 
 ```{r}
 mean_by_permit <- work_loading_data %>% 
@@ -807,30 +583,33 @@ ggplot(mean_by_permit, aes(x = reorder(PERMIT_GROUP, -mean_time), y = mean_time,
 
 print(mean_by_permit)
 ```
+In **Chart “Mean work time per week by permit group”** that follows, we depict than, Permit B “leads” with an average of around 38–39 hours per week. Those with Permit C hover near that level (around 37.6 hours), and only holders of other statuses (“Others”) show a slightly lower level of employment (around 37 hours). Overall, however, all these groups exceed the figure for Swiss citizens (approximately 35.6 hours). 
 
-**Interpretation:**
+This is not surprising: **the harder it is to obtain or renew a work permit**, the more motivated an individual is to prove themselves as an “indispensable” employee and keep their existing job. In addition, many foreigners want to demonstrate stable employment and a steady income, since this can improve their chances of eventually moving into a more “prioritized” category (for example, applying for a Permit C instead of B). 
 
-- Since Permit B and C holders represent the majority of foreign nationals, we compare them to local residents.
-- The average weekly working hours for Permit B holders are around 39.8 hours, which is roughly 3 hours more than Swiss residents.
-- Permit C holders average around 39 hours per week, about 2.2 hours more than Swiss residents.
+**Conclusions and the Effect on Life Prospects**
 
-Permit B employees often have shorter or fixed-term contracts and must frequently apply for renewals, indicating a motivation to maintain stable employment. Permit C holders, on the other hand, may aim to obtain Swiss citizenship in the future, motivating them to work consistently and demonstrate their value to the country, especially given the complex interview and verification process for naturalization.
+Taken together, **Last 4 Charts** show a strong link between homeownership rates, rental costs, and the workload of foreign nationals: on the one hand, high housing costs and additional legal restrictions result in a greater tendency for renting, on the other, the need to cover rent and prove oneself indispensable to an employer leads to an **increase in working hours**. 
 
-## Answer to Question
-
-In general, foreigners in Switzerland are less likely to experience this level of flexibility. Many foreign workers are tied to industries and roles that demand fixed schedules, such as construction, hospitality, or manufacturing. These sectors often have less room for negotiation, and foreigners may find themselves working longer or more rigid hours to meet financial  obligations.
-
-# Summary 
-
-The analysis examines the relationship between education, generational trends, and home ownership in Switzerland, uncovering significant insights into societal and economic patterns. Higher education is a key determinant of home ownership, with individuals holding advanced qualifications significantly more likely to own property, particularly as they age. In contrast, vocational training, while valuable, shows a weaker association with property ownership. Generational shifts reveal that younger individuals prioritize higher education over vocational training, aligning with modern economic demands
-Foreign nationals face notable disparities compared to Swiss residents, with home ownership rates significantly lower (22.4% vs. 50.3%). Migrants from EFTA countries are more likely to own property than those from Africa, Asia, or Oceania, highlighting economic and systemic barriers for certain groups. Furthermore, foreign nationals often work longer hours, predominantly in full-time roles, reflecting financial pressures and less flexibility in employment compared to Swiss residents. Household size also plays a crucial role, as larger families tend to prioritize stability through home ownership.
-
-Looking ahead, the younger generation’s focus on higher education is likely to result in higher home ownership rates in the coming decades, provided current patterns persist. Policymakers are encouraged to address barriers faced by foreign nationals, support larger families through targeted housing policies, and facilitate greater access to higher education. These measures will help create a more equitable and stable future, ensuring that education and employment opportunities translate into tangible benefits, including property ownership, for all residents of Switzerland.
+While a few extra hours per week may not seem like much, in annual terms it becomes quite significant. Foreigners invest more time in their jobs, often sacrificing personal life or additional learning opportunities—all in pursuit of stability and the right to remain in the country. Ultimately, this can become a vicious cycle: without stable income and steady employment, it’s difficult to buy property; yet without property ownership, people must work harder to afford rent. 
 
 
+At the same time, it’s important to note that not all foreigners face equally challenging conditions. Much depends on their level of qualifications, language skills, length of stay in the country, and type of residence permit. Still, the overall trend is clear: **nationality and residence status in Switzerland have a notable impact on workload** and, as a result, on the ability to achieve long-term financial comfort and purchase property. 
 
+---
 
+In this blog, we conducted an in-depth analysis of Switzerland and sought answers to our questions. Some of the results did not align with our expectations, and as individuals who are just getting to know Switzerland, we were truly surprised by these findings. 
 
+**To summarize the interesting findings:**  
 
+We expected the employment rate to be lower among individuals with higher education levels, as we assumed their salaries would allow them to achieve work-life balance more easily. However, the data showed the opposite. We believed one reason for this could be psychological factors, while another possible explanation might be the desire for property ownership. 
 
+However, while examining the relationship between education and homeownership, we were surprised to find that individuals with VET education tend to become home owners earlier than those with higher education levels. As we mentioned before, such an education system isn't popular in Asian countries. This finding highlight how efficient and effective Switzerland's education system truly is and explains the importance given to VET education. 
 
+However, we noticed that over the years, VET education has been losing its popularity. Although it remains the most popular pathway, we see that people are increasingly focusing on higher education. Despite VET being such an efficient system, we believe the shift in focus might be due to technological advancements replacing many VET-related jobs, leading people to seek higher education as a way to protect their careers.  
+
+Another striking observation is that, despite property prices rising faster than salaries in Switzerland, home ownership rates have increased over the years. We believe one of the main reasons for this trend is inheritance. 
+
+Switzerland, which has the third-highest foreign population in Europe, benefits greatly from the contributions of its foreign residents to the economy. Nationality and citizenship play a key role in homeownership, with Swiss citizens and Europeans hold an advantage when it comes to owning property. This is because they often face fewer legal restrictions and have easier access to loans. Foreign residents often have higher employment rates than Swiss citizens due to their motivation to renew their residence permits and establish a stable life in Switzerland. Additionally, foreign workers bring valuable skills and fresh perspectives, which strengthen the economy and drive progress in various industries. These contributions underline the vital role of foreign residents in Switzerland's success while also highlighting the unique challenges they face when settling in a new country. 
+
+As foreigners, we observed how different Switzerland is from our own countries in several aspects. These findings were incredibly interesting for us, and we hope you found them engaging as well. As a team, we hope that this blog will serve as a valuable resource for individuals looking to better understand Switzerland and shape their lives here. 
