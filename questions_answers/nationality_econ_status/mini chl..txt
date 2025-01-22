@@ -1,0 +1,670 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------
+
+
+
+
+
+BLOCK A
+
+A.1 
+What collections are there and how many documents do they each contain? (C/A)
+
+
+------
+code:
+use sample_training
+show collections
+------
+answer:
+these are the collections in sample training dataset.
+companies
+grades
+inspections
+posts
+routes
+trips
+zips
+-------------
+code:
+db.companies.countDocuments()
+db.grades.countDocuments()
+db.inspections.countDocuments()
+db.posts.countDocuments()
+db.routes.countDocuments()
+db.trips.countDocuments()
+db.zips.countDocuments()
+---------------
+answer:
+9500
+100000
+80047
+500
+66985
+10000
+29470
+------------------
+
+
+A.2 
+Describe in own words the result of each of the following statement (A)
+
+
+
+-------------
+answer:
+
+db.zips.find( {"state":"AL"} )
+This code retrieves documents from the zips collection where the state is named "AL."
+
+db.zips.find( {"state":"AL"} ).count()
+This code counts the number of documents in the zips collection where the state is named "AL."
+
+db.zips.find( {"city":"HEIDELBERG"} )
+This code retrieves documents from the zips collection where the city is named "HEIDELBERG."
+
+db.zips.find( {"city":"PARIS"} ).sort({"pop":-1}).limit( 2 )
+This code retrieves documents from the zips collection where the city is named "PARIS," sorts them in descending order by population, and then returns the first 2 documents.
+
+db.zips.find( {"city":"PARIS", "pop":{$gt:16000} } )
+This code retrieves documents from the zips collection where the city is named "PARIS" and the population is greater than 16000, using the $gt operator.
+-----------------
+
+
+A.3 
+Determine the results of the following statements and explain why they are different: (A)
+
+
+---------------------
+answer:
+
+db.zips.countDocuments()
+This code counts the total number of documents in the zips collection without applying any filters.
+
+db.zips.distinct("zip").length
+This code first retrieves the distinct zip values from the zips collection and then returns the number of unique zip values in the collection
+---------------------------
+
+
+
+
+
+A.4 
+Assume that a city/municipality is uniquely defined by its name (city) and the federal state (state).
+
+How many cities with name PARIS exist in the US ? (C/A)
+Specify the statement and answer the question give reasons.
+
+---------------------------
+code:
+
+db.zips.distinct("state", { "city": "PARIS" }).length
+
+answer:
+
+With this code, we retrieved unique state and city combinations where the city is "PARIS" and returned the count using length.
+
+result:11
+
+
+---------------------------
+
+Is there a city with name NEW YORK outside the state New York (NY)? (C/A)
+
+------------
+code:
+
+db.zips.find({ "city": "NEW YORK", "state": { $ne: "NY" } }).count()
+
+answer:
+
+This code filters for "city": "NEW YORK" while excluding "state": "NY". The result will be the count of such cities.
+
+result:0
+-------------------------
+
+
+
+
+
+A.5 
+
+a)
+Identify the 4 stages (match, group, sort, limit) of the aggregation and describe the function of each of them (A)
+------------------
+answer:
+
+The match stage helps us filter documents for states named "CO". It works similarly to the find() method.
+
+The group stage groups the documents by city. It calculates the total population for each city using $sum and stores it in totalPop. It also counts the number of documents in each city using $sum: 1 and stores the result in count.
+
+The sort stage arranges the data in descending order based on totalPop.
+
+The limit stage returns the first 4 documents from the sorted data.
+-------------------------
+
+
+b)
+What is the result of this statement? Describe it in own words
+
+--------------------
+
+answer: The 4 most populated cities in the state of "CO," sorted by descending population.
+
+-------------------
+
+
+
+c)
+Specify this SQL statement.
+
+-------------------------
+
+code:
+
+SELECT city AS _id, SUM(pop) AS totalPop, COUNT(*) AS count
+FROM ZIPS
+WHERE state = "CO"
+GROUP BY city
+ORDER BY totalPop DESC
+LIMIT 4;
+----------------------
+
+
+
+
+A.6
+Change the query from A.5 by replacing "$city" with null in the group stage. What effect does this have, what is the output? 
+
+---------------------
+answer:
+
+Replacing "$city" with null will aggregate all documents in the "CO" state into a single output. It provides the total population and the number of documents in the state "CO".
+
+--------------------------
+
+
+
+A.7
+Use A.5 as a basis and formulate a query that determines the 3 states with the fewest inhabitants and outputs them (together with the number of inhabitants) in ascending order by state. (C)
+
+--------------------
+code:
+
+db.zips.aggregate([
+  {
+    $group: {
+      _id: "$state", 
+      totalPop: { $sum: "$pop" } 
+    }
+  },
+  {
+    $sort: { totalPop: 1 } 
+  },
+  {
+    $limit: 3 
+  }
+])
+-------------------------
+
+
+A.8
+!!!!!!!!!!!!!!!!!!!!!!
+Verwende A.5 als Grundlage und formuliere eine Abfrage, welche die 6 grössten (bzgl. Einwohnerzahl) Gemeinden der USA zusammen mit deren Einwohnerzahl in absteigender Reihenfolge ausgibt. (Beachte die Bemerkung in A.4) (C)
+
+
+-----------------
+
+code:
+db.zips.aggregate([
+  {
+    $group: {
+      _id: { city: "$city", state: "$state" }, 
+      totalPop: { $sum: "$pop" } 
+    }
+  },
+  {
+    $sort: { totalPop: -1 } 
+  },
+  {
+    $limit: 6 
+  }
+])
+
+------------------
+
+
+A.9
+
+
+----------------
+
+code:
+
+db.routes.aggregate([
+  {
+    $group: {
+      _id: "$stops", 
+      count: { $sum: 1 } 
+    }
+  },
+  {
+    $sort: { _id: 1 }
+  }
+])
+
+
+answer: 
+This code groups routes by stops, counts the number of documents in each and sorts by number of stops in ascending order
+
+result:
+66974 documents with stop 0 
+11 documents with stop one
+
+---------------------------
+
+
+
+A.10
+How many airlines start at Munich airport (MUC)? 
+
+-----------------------------
+
+code:
+
+db.routes.aggregate([
+ { $match: { "src_airport": "MUC" } },
+ { $count : "count"}])
+
+or
+
+db.routes.find({ "src_airport": "MUC" }).count()
+
+answer:
+
+368 of the planes start from Munich airport.
+
+------------------
+
+
+
+
+A.11 ??????????????????????????
+Which airports can be reached directly from Zurich Airport (ZRH) (without changing planes)? 
+(The attribute ‘stops’ can be ignored here. Even if stops>0, passengers do not  have to leave the aircraft). 
+‘Direct’ means without a connecting flight.
+
+
+---------------------
+code:
+
+db.routes.aggregate([
+  {$match: { src_airport: "ZRH" } },
+  {$group: {_id: "$dst_airport"}},
+  { $project: { _id: 0, dst_airport: "$_id" } } 
+])
+
+answer:
+This code lists the unique destination airports (dst_airport) that can be reached directly from Zurich Airport (ZRH) on departing flights.
+-------------------------------
+
+How many airports can be reached directly from Zurich Airport?
+
+---------------------
+code:
+
+db.routes.aggregate([
+  { $match: { src_airport: "ZRH" } },
+  { $group: { _id: "$dst_airport" } },
+  { $count: "direct_airports" }
+])
+
+answer: 
+this code counts the unique destination airports (dst_airport) that can be reached directly from Zurich Airport (ZRH) on departing flights.
+
+result:
+direct_airports: 137
+--------------------------
+
+
+
+
+??????????????????????
+A.12
+ Is there an airport from which every (other) airport can be reached without changing planes? There are various ways in which you can argue this, choose any of them (C/A)
+
+
+
+
+
+
+
+
+
+???????????????????
+A.13
+Which airports can be reached from Frankfurt (FRA) with one change that are not directly accessible? ‘One change’ means that you can use a connecting flight; so if there is
+a flight A→B and a flight B→C, then C can be reached from A with one change (namely in B). (Please do not output all airports, there are quite a few.) (C)
+
+-------------
+code:
+
+
+
+
+
+
+BLOCK B
+
+
+B.1
+Which types of bed do exist?
+
+------------------
+code:
+
+db.listingsAndReviews.distinct("bed_type")
+---------------------
+
+
+
+
+
+B.2
+How many AirBnBplaces (documents) exist that are located in Portugal having a real bed ?
+
+------------------------
+code:
+
+db.listingsAndReviews.aggregate([
+{$match: {"address.country_code" : "PT" , "bed_type" : "Real Bed"}},
+{$count: "num_of_real_beds_in_PT"}
+])
+
+result: num_of_real_beds_in_PT: 551
+------------------------
+
+
+B.3
+Calculate the price per bed for each AirBnB place with a bed
+Note: Many places have more than one bed, where ‘price’ indicates the price for the entire place, i.e. all beds. 
+
+----------------------
+code:
+
+db.listingsAndReviews.aggregate([
+  {$match: {beds : {$ne:0 } } },
+  {$project: { price_per_bed: { $divide: ["$price", "$beds"] } , "address.country_code": 1,beds:1} },
+  {$out: "listingsWithPricePerBed"}
+])
+
+
+-------------------
+
+
+B.4
+Which AirBnB places in Portugal with at least 3 and at most 5 beds have the cheapest price per bed? List the 10 cheapest places sorted by price per bed, cheapest first. 
+
+------------------
+code:
+
+db.listingsWithPricePerBed.aggregate([
+  {$match: {"address.country_code" : "PT", "beds" : { $gte:3 , $lte:5 }}},
+  {$sort: { price_per_bed: 1 }},
+  {$project : {beds:1, price_per_bed :1}},
+  {$limit: 10}
+])
+
+-------------------
+
+
+B.5
+Determine the 10 most frequent names of the hosts and output these together with the
+frequency of their occurrence (in descending order). (We consider the value of the key
+host.host_name as a name without separating it into first and last name). 
+
+---------------
+code:
+
+db.listingsAndReviews.aggregate([
+  {$group: { _id: "$host.host_name", freq: { $sum: 1 } }},
+  {$project: {"host.host_name":1, freq:1} },
+  {$sort: {"freq":-1}},
+  {$limit: 10}
+])
+
+-----------------------
+
+
+
+?????????????????????????
+B.6
+You are visiting Porto (Portugal) and you are looking for an acommodation with exactly 4
+beds, that is no further than 1200 meters from the cathedral of Porto
+(geo-coordinates:-8.611311, 41.142347). Output the three closest results that fulfil these
+conditions
+
+---------------
+code:
+
+db.listingsAndReviews.aggregate([
+  {
+    $geoNear: {
+      near: { type: "Point", coordinates: [-8.611311, 41.142347] },
+      maxDistance: 1200,
+      query: { "beds": 4, "address.country_code": "PT" },
+      distanceField: "address.loation.coordinates"
+    }
+  },
+  { $limit: 3 }
+]);
+
+-----------------------
+
+
+
+
+
+BLOCK C
+
+
+C.1a
+Determine all persons who have acted in films (ACTED_IN) in which Meg Ryan has also
+acted. Meg Ryan should also be output. (C)
+
+
+---------------
+code:
+MATCH (meg:Person {name: "Meg Ryan"})-[:ACTED_IN]->(movie:Movie)<-[:ACTED_IN]-(coActor:Person)
+RETURN DISTINCT coActor.name AS CoActor
+-------------------------------
+
+
+
+C.1b
+Determine all films in which Meg Ryan has acted, together with all other persons that
+also acted in these films.
+
+
+------------------------
+code:
+
+MATCH (meg:Person {name: "Meg Ryan"})-[:ACTED_IN]->(movie:Movie)<-[:ACTED_IN]-(coActor:Person)
+RETURN DISTINCT coActor.name AS CoActor, movie.title AS MovieTitle
+
+--------------------
+
+
+
+C.2a
+List all directors and films in which the director (DIRECTED) has also acted. 
+
+---------------
+code:
+
+MATCH (actor:Person )-[:ACTED_IN]->(movie:Movie)<-[:DIRECTED]-(director:Person)
+RETURN DISTINCT director.name as Director , movie.title as Movie
+
+------------------
+
+
+
+C.2b
+Describe in your own words (do not list the results) what the following statement outputs.
+(Here ‘Bla Blo’ is a person with this name): 
+(A)
+
+MATCH (p:Person)-[related1]->(m)<-[related2]-(meg:Person{name:"Bla Blo"})
+RETURN p.name, type(related1), type(related2),meg.name
+
+--------------------------------
+Answer:
+
+The query identifies the type of connection another person has to the same node that "Bla Blo" is connected to and determines who that person is and what type of connection they share.
+
+------------------------
+
+
+C.3a
+How many films has Meg Ryan acted in? 
+
+-------------------
+code:
+
+MATCH (meg:Person{name:"Meg Ryan"})-[ACTED_IN]->(Movie)
+RETURN COUNT(Movie) as NumOfMovies
+
+Answer:
+ 5
+-------------------------
+
+
+
+
+C.3b
+How many films has Tom Hanks been in (as an actor, director or whatever)? 
+
+--------------------------
+code:
+
+MATCH (tom:Person{name:"Tom Hanks"})-[related]->(Movie)
+RETURN COUNT(Movie) as NumOfMovies
+
+answer: 13
+
+--------------------
+
+
+C.4
+When were the youngest and the oldest actor, the youngest and oldest director, producer, etc. (whatever) born? (One ‘output line’ for each type of relationship) (Ideally a single statement.) (C)
+
+--------------------
+code:
+
+MATCH (person:Person)-[r]->(movie:Movie)
+RETURN 
+  type(r) as Relationship , 
+  MIN(person.born) AS OldestBorn, 
+  MAX(person.born) AS YoungestBorn
+ORDER BY type(r)
+
+answer:
+
+Relationship	OldestBorn	YoungestBorn
+"ACTED_IN"	1929	         1996
+"DIRECTED"	1930	         1967
+"PRODUCED"	1941	         1967
+"REVIEWED"	null		 null
+"WROTE"		1941		 1969
+
+-----------------------------
+
+
+
+C.5a
+When was the youngest and oldest person born who played in any film in which Meg Ryan also played? 
+
+---------------------
+code:
+
+MATCH (person:Person)-[:ACTED_IN]->(movie:Movie) <- [:ACTED_IN]-(meg:Person{name:"Meg Ryan"})
+RETURN 
+  MIN(person.born) AS OldestBorn, 
+  MAX(person.born) AS YoungestBorn
+
+answer:
+OldestBorn	YoungestBorn
+1933	         1973
+
+------------------------
+
+
+C.5b
+What is the maximum age difference between two actors who have played in the same film? 
+
+-------------------------
+code:
+
+MATCH (person:Person)
+RETURN MAX(person.born) -MIN(person.born) As AgeDifference
+
+
+-------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

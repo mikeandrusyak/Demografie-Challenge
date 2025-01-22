@@ -7,37 +7,28 @@ output:
     toc_depth: 3
     number_sections: true
 ---
-**Why this topic**
-Our team consists of immigrants, and we place great importance on the process of integration. It is crucial for us to meet the high standards of Switzerland, a country that has provided us with valuable opportunities in exchange for honest work, tax contributions, and successful examples of integration.
+ 
 
-We consider purchasing a home to be one of the key milestones in the integration process. Therefore, we have decided to analyze the factors that contribute to a successful home purchase and those that can increase its likelihood. These factors may include the successful completion of education or long-term full-time employment.
-
-We are eager to gain a deeper understanding of these aspects and warmly invite you to join us in this endeavor.
-
-
-# Data Preparation
-**Loading Libraries, Functions, and Decoding Info**
-```{r message=FALSE}
+```{r ,echo=FALSE,message=FALSE}
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 source("chart_functions.R")
 source("decode_lists.R")
 ```
-**Loading data**
-```{r}
+
+```{r ,echo=FALSE,message=FALSE}
 zp_merged_data <- read.csv("data/zp_merged_data.csv")  # individual-level data
 hh_merged_data <- read.csv("data/hh_merged_data.csv")  # household-level data
 ```
-**Merging the Data sets**
-```{r}
+```{r ,echo=FALSE,message=FALSE}
 # Merge datasets (household-level + individual-level)
 merged_data <- hh_merged_data %>%
   left_join(zp_merged_data, by = c("HOUSEHOLDYEARLYID" = "HOUSEHOLDYEARLYID",
                                    "YEAR_QUIZ" = "YEAR_QUIZ"))
 ```
-**Decoding the data**
-```{r}
+
+```{r ,echo=FALSE,message=FALSE}
 merged_data <- decode(merged_data, HIGHESTCOMPLEDU, education_level)
 merged_data <- decode(merged_data, IN_EDUCATION, in_edu)
 merged_data <- decode(merged_data, CURRACTIVITYSTATUSIII, activity_status)
@@ -52,29 +43,34 @@ merged_data <- decode(merged_data, NATIONALITYCONTI, nationality_conti)
 merged_data <- merged_data %>% 
   mutate(Employment_Type = as.factor(CURRACTIVITYSTATUSIII))
 ```
-**Creating Age groups**
-```{r}
+
+```{r ,echo=FALSE,message=FALSE}
 merged_data$AGE_GROUP <- cut(
   merged_data$AGE,
-  breaks = c(15, 20, 35, 50, Inf), 
+  breaks = c(15, 25, 40, 55, Inf), 
   right = FALSE, 
-  labels = c("Teen", "Young Adult", "Adult", "Mature Adult")
+  labels = c("15-25", "25-40", "40-55", "55 +")
 )
+
 ```
 
+Education, Equality, and Ownership:  
+Unveiling the Hidden Truths in Switzerland 
 
+Moving to a new country is both exciting and challenging, and Switzerland, with its high living standards and fair economic opportunities, is no exception. However, for many foreigners, the question remains: Are these opportunities truly equal for everyone? 
 
-#  How does education level vary with type of employment?
+Education, employment, and property ownership are critical factors that shape quality of life. Yet, social differences, particularly for foreign nationals, play a significant role in accessing these opportunities. 
 
-**Extracting only the necessary data**
-```{r}
+This article explores key questions such as: Does higher education genuinely lead to a more comfortable life? Do foreigners in Switzerland have the same chances for employment and property ownership as citizens? 
+
+By addressing these questions, we aim to provide both a thoughtful analysis and a reflection of the shared experiences of those striving to build a better life in Switzerland. 
+
+```{r ,echo=FALSE,message=FALSE}
 education_employment_data <- merged_data %>% 
   select(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type, IN_EDUCATION)
 ```
 
-**Filter and Clean Data**
-```{r}
-
+```{r ,echo=FALSE,message=FALSE}
 education_employment_data <- education_employment_data %>%
   filter(
     !is.na(HIGHESTCOMPLEDU),
@@ -84,13 +80,11 @@ education_employment_data <- education_employment_data %>%
   )
 ```
 
-## Plots
+
 
  
-### The most frequent education/employment level
-  
-**What is the most commonly completed education level and the most common employment type among different generations?**
-```{r, warning=FALSE}
+
+```{r ,echo=FALSE,message=FALSE}
 heatmap_data <- education_employment_data %>%
   mutate(HIGHESTCOMPLEDU = factor(
     HIGHESTCOMPLEDU, 
@@ -116,10 +110,17 @@ ggplot(heatmap_data, aes(x = AGE_GROUP, y = HIGHESTCOMPLEDU, fill = n)) +
   )
 ```
 
-**Basic Vocational Education and Training is the most commonly completed education level across all age groups. However, younger generations tend to focus more on pursuing higher education, reflecting a shift towards advanced qualifications in recent years.**
- 
+ Let’s begin with our first question:  
 
-```{r}
+Does Education Influence Employment?
+
+From an early age, many of us are taught that higher education is the gateway to a better, more independent life. But is this assumption accurate? Can pursuing higher education truly lead to a lifestyle that allows for more time with loved ones and hobbies? 
+
+The belief that education provides independence and better work-life balance is one reason people strive for advanced qualifications. Higher education graduates often earn more, which may allow them to work fewer hours compared to those with lower educational levels while living the same level of comfort. 
+
+First, let’s take a closer look at the Swiss education system. According to admin.ch Switzerland's education system is highly efficient and well-structured, ensuring nearly all children complete compulsory schooling. A significant highlight is the Vocational Education and Training (VET) system, chosen by two-thirds of upper-secondary students, which not only equips them with practical skills but also delivers economic returns, as the productivity of VET students exceeds the CHF 5 billion spent annually by companies. 
+
+```{r ,echo=FALSE,message=FALSE}
 heatmap_data <- education_employment_data %>%
   count(AGE_GROUP, Employment_Type)
 
@@ -144,17 +145,9 @@ ggplot(heatmap_data, aes(x = AGE_GROUP, y = Employment_Type, fill = n)) +
   )
 ```
   
-**People start to concentrate on work when they reach 30 Year Age.**
 
-**People mostly prefer to work Full-Time**
- 
----
 
-### Analyzing the people on education
-
-**What proportion of individuals in each age group are still in education?**
-
-```{r}
+```{r ,echo=FALSE,message=FALSE}
 data_with_proportions <- education_employment_data %>%
   group_by(HIGHESTCOMPLEDU, AGE_GROUP) %>%
   mutate(Total = n()) %>%
@@ -185,13 +178,7 @@ data_with_proportions %>%
   coord_flip()
 ```
 
-**A significant portion of younger individuals are still engaged in continuing education. After the age of 30, most individuals are no longer in education, having completed their formal studies earlier in life.**
 
----
-
-### Employment and Education:
-
-**What percentage of individuals in education are employed full-time, part-time, or unemployed?**
 
 ```{r}
 data_with_proportions <- education_employment_data %>%
@@ -204,11 +191,11 @@ data_with_proportions <- education_employment_data %>%
   group_by(AGE_GROUP, HIGHESTCOMPLEDU, Employment_Type) %>% 
   summarise(Count = n(), Proportion = Count / first(Total), .groups = "drop") 
 
-ggplot(data_with_proportions, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = Employment_Type)) +
+ggplot(data_with_proportions, aes(x = AGE_GROUP, y = Proportion, fill = Employment_Type)) +
   geom_bar(stat = "identity", position = "fill") +
   geom_text(aes(label = scales::percent(Proportion, accuracy = 1)), 
             position = position_fill(vjust = 0.5), size = 3) +
-  facet_wrap(~AGE_GROUP) +
+  facet_wrap(~HIGHESTCOMPLEDU) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1), 
     axis.line = element_line(size = 1.5)
@@ -217,40 +204,12 @@ ggplot(data_with_proportions, aes(x = HIGHESTCOMPLEDU, y = Proportion, fill = Em
   labs(
     title = "Distribution of Employment Types by Education Level",
     x = "Education Level",
-    y = "Proportion"
+    y = "Proportion",
+    fill = "Employment Type"
   )
 ```
 
-**As the age group increases, the unemployment rate decreases, and the Full-Time employment rate rises.**
-
-**Higher education levels increase employment rates and reduce unemployment.**
-
-**Part-Time employment is more common, especially among older age groups and at certain education levels.**
-
----
-
-## Answer to Question
-
-
-**1. Link Between Education Level and Employment**
-
-There is a clear link between education level and employment type. **People with higher education are more likely to get full-time jobs and are less likely to be unemployed.**
-
-**2. Employment Patterns for People in Education**
-
-- **Full-Time Jobs:** As people get older, the number of those with full-time jobs increases.
-- **Part-Time Jobs:** Part-time work is more common, especially for older people and those studying while working.
-- **Unemployment:** Unemployment is higher among young people and those with lower education. However, it decreases as they grow older and finish more education.
-
-**3. The Future for Younger Generations**
-
-Young people are focusing more on higher education. This will likely help them get better jobs and avoid unemployment in the future. Switzerland supports this trend by providing financial help for people in higher education, showing its dedication to building a well-educated workforce.
-
-**4. Key Points**
-
-> **Higher education helps people find jobs and lowers unemployment.**  
-> **Governments should create ways for young people to combine education with part-time jobs.**  
-> **Supporting education will keep Switzerland’s economy strong in the future.**
+-----------------------------------------------------------
 
 # How does the level of education affect the type of ownership?
 
@@ -271,9 +230,15 @@ complete_edu_and_ownership <- merged_data %>%
 complete_edu_and_ownership <- complete_edu_and_ownership %>%
   filter(
     !is.na(HIGHESTCOMPLEDU),
-    !is.na(AGE_GROUP),
-    !is.na(TYPEOFOWNERSHIP)
-  )
+    !is.na(AGE_GROUP)
+  ) %>%
+  mutate(TYPEOFOWNERSHIP = case_when(
+    TYPEOFOWNERSHIP %in% c("Condominium owner", "House owner") ~ "Owner",
+    TYPEOFOWNERSHIP %in% c("Tenant") ~ "Renter",
+    TYPEOFOWNERSHIP == "Other situation" ~ "Other situation",
+    TRUE ~ NA_character_
+  )) %>% 
+  filter(!is.na(TYPEOFOWNERSHIP))
 ```
 
 ## Plots
@@ -341,16 +306,58 @@ Older individuals are more likely to own property, even without considering the 
 ### Analyzing the age distribution across different ownership types.
 
 ```{r, warning=FALSE}
+
+library(ggplot2)
+library(dplyr)
+
+# Özet tablosu oluşturma
+summary_table <- complete_edu_and_ownership %>%
+  group_by(TYPEOFOWNERSHIP) %>%
+  summarise(
+    mean_age = mean(AGE, na.rm = TRUE),
+    median_age = median(AGE, na.rm = TRUE)
+  )
+
+# Grafik oluşturma ve mean/median değerlerini ekleme
 complete_edu_and_ownership %>%
-  ggplot(aes(x = TYPEOFOWNERSHIP, y = AGE)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of AGE for House Owners", x = "", y = "AGE") +
+  ggplot(aes(x = TYPEOFOWNERSHIP, y = AGE, fill = TYPEOFOWNERSHIP)) +
+  geom_boxplot(outlier.shape = 16, outlier.size = 2) +
+  geom_text(
+    data = summary_table,
+    aes(
+      x = TYPEOFOWNERSHIP,
+      y = mean_age,
+      label = paste0("Mean: ", round(mean_age, 1))
+    ),
+    color = "black",
+    vjust = -2.5,
+    size = 3
+  ) +
+  geom_text(
+    data = summary_table,
+    aes(
+      x = TYPEOFOWNERSHIP,
+      y = median_age,
+      label = paste0("Median: ", round(median_age, 1))
+    ),
+    color = "black",
+    vjust = 1.5,
+    size = 3
+  ) +
+  labs(
+    title = "The Relationship Between Age and Ownership Status",
+    x = "",
+    y = "AGE"
+  ) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.line = element_line(color = "black", size = 1.5), 
-    panel.grid = element_blank() 
-  )
+    axis.line = element_line(color = "black", size = 1.5),
+    panel.grid = element_blank()
+  ) +
+  scale_fill_brewer(palette = "Set3")
+
+
 ```
 
 "Tenants" and "Other Situations" exhibit broader age ranges, while "Condominium Owners" and "House Owners" show more consistent distributions.
@@ -405,7 +412,7 @@ ggplot(data_with_proportions_edu, aes(x = YEAR_QUIZ, y = Proportion, fill = HIGH
     axis.line = element_line(size = 1.5)
   ) +
   labs(
-    title = "Distribution of Education Levels Over the Years",
+    title = "Level of Highest Education Over the Years",
     x = "Year",
     y = "Proportion"
   ) +
@@ -424,6 +431,7 @@ From this chart, we can observe that people are increasingly focusing on higher 
  
 ```{r, warning=FALSE}
 grouped_data <- complete_edu_and_ownership %>%
+filter(AGE_GROUP != "15-25") %>% 
   mutate(HIGHESTCOMPLEDU = factor(
     HIGHESTCOMPLEDU, 
     levels = c("None", "Compulsory", "Secondary", "Basic VET", "Higher VET", "Higher Ed")
@@ -502,14 +510,15 @@ home_owner_data <- home_owner_data %>%
 home_owner_data <- home_owner_data %>%
   mutate(HOMEOWNERSHIP = case_when(
     TYPEOFOWNERSHIP %in% c("Condominium owner", "House owner") ~ "Owner",
-    TYPEOFOWNERSHIP %in% c("Tenant", "Other situation") ~ "Renter",
-    TRUE ~ NA_character_
-  ))
+    TYPEOFOWNERSHIP %in% c("Tenant") ~ "Renter",
+    TYPEOFOWNERSHIP == "Other situation" ~ "Other situation",
+    TRUE ~ NA_character_))
+```
 
+
+```{r}
 home_owner_data <- home_owner_data %>%
-    filter(
-    !is.na(HOMEOWNERSHIP)
-  )
+    filter(!is.na(HOMEOWNERSHIP))
 ```
 **Group household size**
 ```{r}
@@ -531,7 +540,7 @@ home_owner_data <- home_owner_data %>%
 plot1 <- create_proportional_plot(
   data = home_owner_data,
   group_var = "NATIONALITYCAT",
-  fill_var = "TYPEOFOWNERSHIP",
+  fill_var = "HOMEOWNERSHIP",
   y_var = "proportion",
   title = "Proportion of Homeownership by Nationality",
   x_label = "Nationality",
@@ -551,7 +560,7 @@ plot2 <- create_proportional_plot(
       !(NATIONALITYCONTI %in% c("Switzerland", NA, "Stateless")) 
     ),
   group_var = "NATIONALITYCONTI",
-  fill_var = "TYPEOFOWNERSHIP",
+  fill_var = "HOMEOWNERSHIP",
   y_var = "proportion",
   title = "Homeownership by Continent",
   x_label = "Continent of Nationality",
@@ -566,6 +575,9 @@ print(plot2)
 
 ```{r, message=FALSE}
 # 8.3 Plot: Proportion of Homeownership by Citizenship
+home_owner_data <- home_owner_data %>% 
+  na.omit()
+
 plot1 <- create_proportional_plot(
   data = home_owner_data,
   group_var = "SECCITIZENSHIP",
