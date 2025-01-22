@@ -1,14 +1,15 @@
 ---
-title: "Education, Equality, and Ownership: Unveiling the Hidden Truths in Switzerland"
 output: 
   html_document:
     toc: true
     toc_float: true
     toc_depth: 3
-    number_sections: true
 ---
 
-![swiss_map](images/swiss_map.png)
+![](images/NicePic.png)
+
+
+
 Moving to a new country is both exciting and challenging, and Switzerland, with its high living standards and fair economic opportunities, is no exception. However, for many foreigners, the question remains: Are these opportunities truly equal for everyone?
 Education, employment, and property ownership are critical factors that shape quality of life. Yet, social differences, particularly for foreign nationals, play a significant role in accessing these opportunities.
 This article explores key questions such as: Does higher education genuinely lead to a more comfortable life? Do foreigners in Switzerland have the same chances for employment and property ownership as citizens?
@@ -97,15 +98,17 @@ education_employment_data <- education_employment_data %>%
     !is.na(Employment_Type)
   )
 ```
-#  Does Education Influence Employment?
+###  Does Education Influence Employment?
 
-life. But is this assumption accurate? Can pursuing higher education truly lead to a lifestyle that allows for more time with loved ones and hobbies?
+From an early age, many of us are taught that higher education is the gateway to a better, more independent life. But is this assumption accurate? Can pursuing higher education truly lead to a lifestyle that allows for more time with loved ones and hobbies?
 
 The answer to this question is valuable to us, as the result may help us choose a path in life depending on our perspective. That’s why we want to examine this question more closely.
 
 First, let’s take a closer look at the Swiss education system. In many cantons, students aged 14-15 face a big choice after lower secondary school. Some quarters pressure children to pursue the general education route for prestige reasons. Most pupils on this track attend a Swiss high school and take the Swiss Baccalaureate, which prepares them for university. [(source)](https://www.swissinfo.ch/eng/sci-tech/the-swiss-education-system-explained/48148948)
 
 The education system in Switzerland is flexible. Now, let's look at how it has changed over the years.
+
+
 ```{r warning=FALSE}
 data_with_proportions_edu <- education_employment_data %>%
   mutate(HIGHESTCOMPLEDU = factor(
@@ -133,6 +136,7 @@ ggplot(data_with_proportions_edu, aes(x = YEAR_QUIZ, y = Proportion, fill = HIGH
   ) +
   coord_flip()
 ```
+
 
 From the charts, it is shown that vocational education remains popular across generations due to its ability to prepare individuals for the workforce at an early age. According to [work.swiss](https://www.arbeit.swiss/secoalv/en/home/menue/stellensuchende/berufliche-mobilitaet-in-der-eu-efta---eures/aus-und-weiterbildung.html) These programs offer both theoretical knowledge and practical skills, enabling young people to start their careers earlier and achieve financial independence which is an amazing and unique education type that doesn’t exist in most countries. However, we also observe that with years people are starting to focus more on higher education. So, what could be the reason for this shift?
 
@@ -174,6 +178,7 @@ ggplot(data_with_proportions, aes(x = AGE_GROUP, y = Proportion, fill = Employme
     fill = "Employment Type"
   )
 ```
+
 According to this chart, we can see that education level has a significant impact on employment. Individuals with lower education levels have much lower employment rates compared to those with VET or higher education. This indicates that the income earned by individuals with lower education levels is sufficient for them to maintain their lives at their current employment level.
 
 We initially thought that highly educated individuals would have lower employment rates and achieve better work-life balance, but this assumption turned out to be incorrect. According to data from [admin.ch](https://www.bfs.admin.ch/asset/en/30226036), we found that people with higher education earn significantly more and can afford better living conditions while working less compared to those with lower education levels. In this case, working more becomes a personal preference for highly educated individuals. 
@@ -188,7 +193,7 @@ The desire for property ownership may also be a reason for pursuing higher educa
 
 
 
-# Is There a Link Between Higher Education and Property Ownership?
+### Is There a Link Between Higher Education and Property Ownership?
 
 ```{r}
 complete_edu_and_ownership <- merged_data %>%
@@ -214,7 +219,8 @@ As a group of individuals from different nationalities, we all agree that buying
 
 These challenges highlight the growing gap between income levels and property prices, making home ownership a more difficult goal for today’s population compared to previous generations. However, the data below reveals an unexpected outcome.
 
-![index_ownership](images/index_ownership.png)
+![](images/index_ownership.png)
+
 
 According to the information from the [Swiss Federal Statistical Office (BFS)](https://www.bfs.admin.ch/bfs/en/home/statistics/construction-housing/dwellings/housing-conditions/tenants-owners.html), it is shown that, contrary to expectations, homeownership rates in Switzerland have actually increased over the years.
 
@@ -270,6 +276,7 @@ complete_edu_and_ownership %>%
   ) +
   scale_fill_brewer(palette = "Set3")
 ```
+
 The boxplots provide evidence to support this idea. The median values demonstrate that older individuals are more likely to own property, which is not surprising. Additionally, the shorter length of the owner plot indicates that the age variation among property owners is smaller compared to other groups. On the other hand, younger generations may prioritize work-life balance and flexible career paths over property ownership, preferring to rent instead.
 
 The reason older generations have high home ownership rates might also be their preference for staying in one place. According to the information from [Neighborhood Rio Rancho](https://www.neighborhoodriorancho.com/article/what-challenges-do-older-adults-face-when-moving/), as people age, moving away from their current location becomes more challenging due to psychological and physical factors. As a result, they tend to prefer living in a stable and permanent location. We do not expect this trend to change significantly in the coming years.
@@ -288,7 +295,7 @@ That’s why I found it fascinating that vocational education and training (VET)
 
 In the chart below, we will seek to answer this question:
 
-** Does the type of education truly influence the likelihood and timing of property ownership?**
+**Does the type of education truly influence the likelihood and timing of property ownership?**
 
 ```{r, warning=FALSE}
 grouped_data <- complete_edu_and_ownership %>%
@@ -340,12 +347,13 @@ After examining the role of education, we wanted to explore whether being a fore
 
 According to data from [NCCR On The Move](https://nccr-onthemove.ch/indicators/what-is-the-proportion-of-foreign-born-populations-in-switzerland-and-europe/) , Switzerland ranks third in Europe for its foreign-born population. As foreign individuals, this aspect is particularly relevant and worth further investigation.
 
-![europe_map](images/Europe_map.png)
+![](images/Europe_map.png)
+
 As evident from the migrant and local population graph, the foreign population in Switzerland is significantly high and plays a crucial role in shaping the dynamics of homeownership. This factor cannot be overlooked in our analysis and is particularly interesting for our multicultural team.
 
 Now that we understand the importance of the foreign population, we can ask this question: 
 
-# How does nationality influence homeownership rates in Switzerland?
+### How does nationality influence homeownership rates in Switzerland?
 
 ```{r}
 home_owner_data <- merged_data %>% select(SECCITIZENSHIP, TYPEOFOWNERSHIP,
@@ -395,11 +403,12 @@ plot1 <- create_proportional_plot(
 print(plot1)
 ```
 
-The data reveals a stark divide between Swiss nationals and foreign residents in homeownership. While 50.3% of Swiss citizens own property (comprising house and condominium ownership), a striking 77.6% of foreign residents remain tenants. In contrast, only 19.7% of foreign residents have achieved homeownership, highlighting significant disparities in property access. Additionally, foreign residents are more likely to fall under the "Other situation" category (2.7%) compared to Swiss nationals (4.2%), which may reflect further instability or alternative living arrangements.
+The data reveals a stark divide between Swiss nationals and foreign residents in homeownership. While **50.4%** of **Swiss citizens** own property, a striking **77.6%** of foreign residents remain renters. In contrast, only **19.8%** of **foreign residents** have achieved homeownership, highlighting significant disparities in property access. Additionally, foreign residents are more likely to fall under the **"Other situation"** category **(2.7%)** compared to Swiss nationals **(4.2%)**, which may reflect further instability or alternative living arrangements.
 
-We believe foreign residents face considerable challenges when it comes to homeownership. Restrictive legal rules, limited financial options, and tougher credit requirements make the process far more difficult. To us, this clearly shows how deeply nationality impacts housing inequality and limits access to stable living opportunities. 
+We believe foreign residents face considerable challenges when it comes to homeownership. Restrictive legal rules, limited financial options, and tougher credit requirements make the process far more difficult. To us, this clearly shows how deeply nationality impacts housing inequality and limits access to stable living opportunities.
 
-Having understood that foreign individuals face more challenges in becoming homeowners compared to Swiss nationals, let us now analyze these foreign individuals in greater detail. Switzerland, as a European country, shares more similarities with other European nations than with countries from other regions. In this context, it is believed that European individuals have a relatively easier path to homeownership. Furthermore, according to information from [ch.ch](https://www.ch.ch/en/housing/homeownership/buying-property/purchasing-property-in-switzerland-as-a-foreign-na) the conditions for buying property vary for individuals from different countries. For citizens of EU countries, they are granted the same rights as Swiss nationals when purchasing a house. 
+Having understood that foreign individuals face more challenges in becoming homeowners compared to Swiss nationals, let us now analyze these foreign individuals in greater detail. Switzerland, as a European country, shares more similarities with other European nations than with countries from other regions. In this context, it is believed that European individuals have a relatively easier path to homeownership. Furthermore, according to information from ch.ch the conditions for buying property vary for individuals from different countries. For citizens of EU countries, they are granted the same rights as Swiss nationals when purchasing a house.
+
 
 ```{r, message=FALSE}
 # 8.2 Example: Proportions by Continent of Nationality and Ownership
@@ -420,9 +429,9 @@ print(plot2)
 
 This chart on homeownership by continent highlights significant disparities across different regions. For instance, residents from **Africa** exhibit the highest proportion of tenants, with **91.1%** renting rather than owning property. Similarly, **Asia** also shows a high tenancy rate at **81.7%**, while ownership (house or condominium) remains relatively low. 
 
-In contrast, **EFTA member states** (e.g., Switzerland, Norway) and **EU member states** demonstrate significantly higher homeownership rates, with **29.4%** and **13.3%** house ownership, respectively. These regions also exhibit a larger share of condominium ownership compared to other continents, reflecting possibly easier access to property markets due to stronger economic integration or legal benefits. 
+In contrast, **EFTA member states** (e.g., Switzerland, Norway) and **EU member states** demonstrate significantly higher homeownership rates, with **43%** and **22.6%** ownership, respectively. These regions also exhibit a larger share of condominium ownership compared to other continents, reflecting possibly easier access to property markets due to stronger economic integration or legal benefits.
 
-**North America** and **Latin America** show somewhat balanced distributions, with tenant proportions of **72.7%** and **74.7%**, respectively. Notably, **Oceania** stands out with a relatively higher rate of homeownership (house and condominium combined, **29.1%**), while the tenancy rate remains lower than Africa or Asia at **68.1%**. 
+**North America** and **Latin America** show high proportions of renters, highlighting challenges in accessing homeownership. In North America, **72.7% of the population rents their homes**, with homeownership being less prevalent. Similarly, in Latin America, the proportion of renters is even higher at **84.6%**, underscoring significant reliance on rental housing in the region. These figures may reflect economic conditions, housing market dynamics, or cultural preferences unique to these continents. Notably, **Oceania** stands out with a relatively higher rate of homeownership **29.1%**, while the renter rate remains lower than Africa or Asia at **68.1%**.
 
 Lastly, individuals from **Other Europe** regions, outside of EU and EFTA membership, have the highest proportion of tenants at **86.2%**, reflecting economic or legal barriers that limit their access to ownership opportunities. 
 
@@ -445,7 +454,7 @@ plot3 <- create_proportional_plot(
 print(plot3)
 ```
 
-From the Homeownership by Nationality and Household Size chart, we can see that, among households with four or more members, a clear disparity emerges: while 64% of Swiss nationals in this group own their homes, only 26.2% of foreign households achieve the same. Even in single-member households, Swiss nationals are significantly more likely to own a home (26.8%) compared to foreign residents, where ownership drops to just 9.1%. However, in both cases, larger households show higher homeownership rates compared to single-member households, suggesting that family size plays a significant role in the likelihood of owning a home, regardless of nationality. 
+From the Homeownership by Nationality and Household Size chart, we can see that, among households with four or more members, a clear disparity emerges: while **64%** of **Swiss nationals** in this group own their homes, only **26.2%** of **foreign households** achieve the same. Even in single-member households, Swiss nationals are significantly more likely to own a home **(26.8%)** compared to foreign residents, where ownership drops to just **9.1%**. However, in both cases, larger households show higher homeownership rates compared to single-member households, suggesting that family size plays a significant role in the likelihood of owning a home, regardless of nationality. 
 
 From these charts, we assume that nationality significantly impacts homeownership rates in Switzerland. Swiss nationals benefit from more favorable conditions, such as easier access to credit and fewer legal restrictions, while foreign residents face systemic barriers that limit their opportunities. Additionally, larger Swiss households appear to leverage pooled resources for property investment, whereas foreign families seem less able to do so, likely due to financial instability or exclusion. These disparities suggest that both structural and cultural factors play a crucial role in shaping housing access. 
 
@@ -454,7 +463,7 @@ The disparities in homeownership rates have profound implications for Switzerlan
 Ultimately, fostering an equitable housing market is about more than just fairness. It’s about building a society where everyone, regardless of nationality, can achieve stability and invest in their future. By addressing systemic barriers, Switzerland can create a more inclusive and resilient housing market, ensuring that homeownership becomes an attainable goal for all its residents. 
 
 
-# The Impact of Restrictions on Foreign Nationals Regarding Housing and Workload
+### The Impact of Restrictions on Foreign Nationals Regarding Housing and Workload
 
 ```{r}
 # Selecting Variables for Chart Building
@@ -542,6 +551,7 @@ work_loading_data %>%
   ) +
   theme_minimal()
 ```
+
 It clearly shows that migrants on average work about one hour longer at the median, and around 2.2 hours longer when looking at the mean. At first glance, one or two extra hours per week may seem trivial. But over the course of a year, that can amount to nearly 115 additional working hours, which equates to about five extra working days (a full working week!). Even such small shifts in the balance can, over time, affect health, leisure, or family life. 
 
 Yet economic need alone—i.e., “earning more”—is not the only explanation for why foreigners tend to work overtime. According to [SEM (State Secretariat for Migration)](https://www.sem.admin.ch/sem/en/home/themen/arbeit/nicht-eu_efta-angehoerige/grundlagen_zur_arbeitsmarktzulassung.html), there is a hierarchical priority in Switzerland requiring employers to first consider Swiss nationals, EU/EFTA citizens, or those who already have certain residence permits granting expanded work rights. 
@@ -581,6 +591,7 @@ ggplot(mean_by_permit, aes(x = reorder(PERMIT_GROUP, -mean_time), y = mean_time,
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   guides(fill = "none")
 ```
+
 In **Chart “Mean work time per week by permit group”** that follows, we depict than, Permit B “leads” with an average of around 38–39 hours per week. Those with Permit C hover near that level (around 37.6 hours), and only holders of other statuses (“Others”) show a slightly lower level of employment (around 37 hours). Overall, however, all these groups exceed the figure for Swiss citizens (approximately 35.6 hours). 
 
 This is not surprising: **the harder it is to obtain or renew a work permit**, the more motivated an individual is to prove themselves as an “indispensable” employee and keep their existing job. In addition, many foreigners want to demonstrate stable employment and a steady income, since this can improve their chances of eventually moving into a more “prioritized” category (for example, applying for a Permit C instead of B). 
@@ -590,7 +601,6 @@ This is not surprising: **the harder it is to obtain or renew a work permit**, t
 Taken together, **Last 4 Charts** show a strong link between homeownership rates, rental costs, and the workload of foreign nationals: on the one hand, high housing costs and additional legal restrictions result in a greater tendency for renting, on the other, the need to cover rent and prove oneself indispensable to an employer leads to an **increase in working hours**. 
 
 While a few extra hours per week may not seem like much, in annual terms it becomes quite significant. Foreigners invest more time in their jobs, often sacrificing personal life or additional learning opportunities—all in pursuit of stability and the right to remain in the country. Ultimately, this can become a vicious cycle: without stable income and steady employment, it’s difficult to buy property; yet without property ownership, people must work harder to afford rent. 
-
 
 At the same time, it’s important to note that not all foreigners face equally challenging conditions. Much depends on their level of qualifications, language skills, length of stay in the country, and type of residence permit. Still, the overall trend is clear: **nationality and residence status in Switzerland have a notable impact on workload** and, as a result, on the ability to achieve long-term financial comfort and purchase property. 
 
