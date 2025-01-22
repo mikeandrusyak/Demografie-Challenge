@@ -106,7 +106,7 @@ The answer to this question is valuable to us, as the result may help us choose 
 First, let’s take a closer look at the Swiss education system. In many cantons, students aged 14-15 face a big choice after lower secondary school. Some quarters pressure children to pursue the general education route for prestige reasons. Most pupils on this track attend a Swiss high school and take the Swiss Baccalaureate, which prepares them for university. [(source)](https://www.swissinfo.ch/eng/sci-tech/the-swiss-education-system-explained/48148948)
 
 The education system in Switzerland is flexible. Now, let's look at how it has changed over the years.
-```{r}
+```{r warning=FALSE}
 data_with_proportions_edu <- education_employment_data %>%
   mutate(HIGHESTCOMPLEDU = factor(
     HIGHESTCOMPLEDU, 
@@ -382,7 +382,7 @@ This analysis aims to answer a key question: How does nationality influence home
 
 As foreigners, we often have to work harder to achieve the goals we aspire to in Switzerland, and this effort extends to homeownership as well. According to the [Swiss Federal Statistical Office (FSO)](https://www.bfs.admin.ch/bfs/en/home/statistics/construction-housing.html), foreign nationals experience significantly lower homeownership rates compared to Swiss citizens. By examining the chart, we can gain a deeper understanding of how nationality and Swiss residency status influence different types of homeownerships.  
 
-```{r, message=FALSE}
+```{r, warning=FALSE}
 plot1 <- create_proportional_plot(
   data = home_owner_data,
   group_var = "NATIONALITYCAT",
@@ -580,8 +580,6 @@ ggplot(mean_by_permit, aes(x = reorder(PERMIT_GROUP, -mean_time), y = mean_time,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   guides(fill = "none")
-
-print(mean_by_permit)
 ```
 In **Chart “Mean work time per week by permit group”** that follows, we depict than, Permit B “leads” with an average of around 38–39 hours per week. Those with Permit C hover near that level (around 37.6 hours), and only holders of other statuses (“Others”) show a slightly lower level of employment (around 37 hours). Overall, however, all these groups exceed the figure for Swiss citizens (approximately 35.6 hours). 
 

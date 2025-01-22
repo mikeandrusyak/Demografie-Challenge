@@ -59,9 +59,7 @@ create_proportional_plot <- function(data, group_var, fill_var, y_var, title, x_
     scale_fill_brewer(palette = "Spectral")+
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1), 
-      axis.line = element_line(size = 1.5)
-    ) +
-    scale_fill_brewer(palette = "Accent") + 
+      axis.line = element_line(size = 1.5)) +
     labs(
       title = title,
       x = x_label,
