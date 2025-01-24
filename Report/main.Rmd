@@ -1,9 +1,5 @@
 ---
-output: 
-  html_document:
-    toc: true
-    toc_float: true
-    toc_depth: 3
+output: html_document
 ---
 
 ![](images/NicePic.png)
@@ -621,3 +617,14 @@ Another striking observation is that, despite property prices rising faster than
 Switzerland, which has the third-highest foreign population in Europe, benefits greatly from the contributions of its foreign residents to the economy. Nationality and citizenship play a key role in homeownership, with Swiss citizens and Europeans hold an advantage when it comes to owning property. This is because they often face fewer legal restrictions and have easier access to loans. Foreign residents often have higher employment rates than Swiss citizens due to their motivation to renew their residence permits and establish a stable life in Switzerland. Additionally, foreign workers bring valuable skills and fresh perspectives, which strengthen the economy and drive progress in various industries. These contributions underline the vital role of foreign residents in Switzerland's success while also highlighting the unique challenges they face when settling in a new country. 
 
 As foreigners, we observed how different Switzerland is from our own countries in several aspects. These findings were incredibly interesting for us, and we hope you found them engaging as well. As a team, we hope that this blog will serve as a valuable resource for individuals looking to better understand Switzerland and shape their lives here. 
+
+---
+
+**Blog prepared:**  &emsp;&emsp;&emsp;&emsp;&emsp;&emsp; **Publish date:**   
+- Gökçe Yaren Demir  &emsp;&emsp;&emsp; _14 January 2025_  
+- Mykhailo Andrusiak  
+- Harmanjot Singh  
+- Ivan Halka   
+
+ 
+
